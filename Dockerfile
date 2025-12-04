@@ -27,8 +27,15 @@ WORKDIR /root/
 # Copiar binario compilado
 COPY --from=builder /app/trainapp .
 
+# Copiar script de inicio
+COPY start.sh .
+RUN chmod +x start.sh
+
 # Copiar frontend estático
 COPY frontend/ ./frontend/
+
+# Copiar base de datos como plantilla (se copiará a /data si no existe)
+COPY backend/trainapp.db ./trainapp_template.db
 
 # Verificar que el frontend se copió correctamente
 RUN ls -la ./frontend/ && echo "✅ Frontend copiado correctamente"
@@ -45,4 +52,4 @@ ENV DATABASE_PATH=/data/trainapp.db
 ENV FRONTEND_PATH=/root/frontend
 
 # Comando de inicio
-CMD ["./trainapp"]
+CMD ["./start.sh"]

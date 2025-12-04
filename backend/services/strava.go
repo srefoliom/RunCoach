@@ -44,9 +44,11 @@ type StravaActivity struct {
 	MaxSpeed         float64   `json:"max_speed"`         // m/s
 	AverageHeartrate float64   `json:"average_heartrate"` // bpm
 	MaxHeartrate     float64   `json:"max_heartrate"`     // bpm
+	HasHeartrate     bool      `json:"has_heartrate"`     // indica si tiene datos HR
 	Calories         float64   `json:"calories"`
 	AverageCadence   float64   `json:"average_cadence"` // pasos por minuto
 	AverageWatts     float64   `json:"average_watts"`   // potencia
+	DeviceWatts      bool      `json:"device_watts"`    // indica si tiene medidor de potencia
 }
 
 var stravaClient *StravaClient
@@ -234,8 +236,9 @@ func ConvertStravaActivityToWorkout(activity *StravaActivity) map[string]interfa
 	}
 
 	// Log de debug para ver los datos de Strava
-	fmt.Printf("📊 Strava Activity %d: HR=%.1f, Power=%.1f, Cadence=%.1f\n",
-		activity.ID, activity.AverageHeartrate, activity.AverageWatts, activity.AverageCadence)
+	fmt.Printf("📊 Activity %d (%s): HasHR=%v HR=%.1f, DeviceWatts=%v Power=%.1f, Cadence=%.1f\n",
+		activity.ID, activity.Name, activity.HasHeartrate, activity.AverageHeartrate,
+		activity.DeviceWatts, activity.AverageWatts, activity.AverageCadence)
 
 	return map[string]interface{}{
 		"date":           activity.StartDate.Format(time.RFC3339),
