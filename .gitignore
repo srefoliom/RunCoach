@@ -11,8 +11,8 @@
 *.out
 
 # Base de datos
-*.db
-trainapp.db
+# *.db
+# trainapp.db
 
 # Variables de entorno
 .env

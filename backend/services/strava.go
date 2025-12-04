@@ -233,6 +233,10 @@ func ConvertStravaActivityToWorkout(activity *StravaActivity) map[string]interfa
 		}
 	}
 
+	// Log de debug para ver los datos de Strava
+	fmt.Printf("📊 Strava Activity %d: HR=%.1f, Power=%.1f, Cadence=%.1f\n",
+		activity.ID, activity.AverageHeartrate, activity.AverageWatts, activity.AverageCadence)
+
 	return map[string]interface{}{
 		"date":           activity.StartDate.Format(time.RFC3339),
 		"type":           workoutType,

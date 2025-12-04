@@ -166,8 +166,16 @@ func StravaSyncHandler(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 
+		// Obtener detalles completos de la actividad (incluye HR y cadencia)
+		detailedActivity, err := client.GetActivity(accessToken, activity.ID)
+		if err != nil {
+			log.Printf("⚠️  Error obteniendo detalles de actividad %d: %v", activity.ID, err)
+			// Continuar con los datos básicos si falla
+			detailedActivity = &activity
+		}
+
 		// Convertir a formato de workout
-		workoutData := services.ConvertStravaActivityToWorkout(&activity)
+		workoutData := services.ConvertStravaActivityToWorkout(detailedActivity)
 
 		// Insertar en la base de datos
 		_, err = database.DB.Exec(`
