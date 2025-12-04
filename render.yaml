@@ -8,6 +8,8 @@ services:
     envVars:
       - key: PORT
         value: 8080
+      - key: BASE_URL
+        value: https://runcoach-pro.onrender.com
       - key: OPENAI_API_KEY
         sync: false
       - key: STRAVA_CLIENT_ID
