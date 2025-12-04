@@ -40,15 +40,12 @@ COPY backend/trainapp.db ./trainapp_template.db
 # Verificar que el frontend se copió correctamente
 RUN ls -la ./frontend/ && echo "✅ Frontend copiado correctamente"
 
-# Crear directorio para la base de datos
-RUN mkdir -p /data
-
 # Exponer puerto
 EXPOSE 8080
 
 # Variables de entorno por defecto
 ENV PORT=8080
-ENV DATABASE_PATH=/data/trainapp.db
+ENV DATABASE_PATH=/root/trainapp.db
 ENV FRONTEND_PATH=/root/frontend
 
 # Comando de inicio

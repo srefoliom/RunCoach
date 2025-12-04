@@ -1253,6 +1253,7 @@ async function syncStrava() {
         
         if (response.ok) {
             const result = await response.json();
+            console.log('Resultado de sincronización:', result);
             
             if (result.imported > 0) {
                 alert(`✅ Se importaron ${result.imported} nuevos entrenamientos de Strava!`);
@@ -1263,6 +1264,7 @@ async function syncStrava() {
             }
         } else {
             const error = await response.text();
+            console.error('Error de Strava:', error);
             alert('❌ Error al sincronizar: ' + error);
         }
     } catch (error) {
