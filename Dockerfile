@@ -39,6 +39,7 @@ EXPOSE 8080
 # Variables de entorno por defecto
 ENV PORT=8080
 ENV DATABASE_PATH=/data/trainapp.db
+ENV FRONTEND_PATH=/root/frontend
 
 # Comando de inicio
 CMD ["./trainapp"]

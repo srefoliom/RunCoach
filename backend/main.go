@@ -35,7 +35,11 @@ func main() {
 	mux := http.NewServeMux()
 
 	// Servir archivos estáticos del frontend
-	fs := http.FileServer(http.Dir("../frontend"))
+	frontendPath := os.Getenv("FRONTEND_PATH")
+	if frontendPath == "" {
+		frontendPath = "../frontend"
+	}
+	fs := http.FileServer(http.Dir(frontendPath))
 	mux.Handle("/", fs)
 
 	// API endpoints
