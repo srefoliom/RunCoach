@@ -30,6 +30,9 @@ COPY --from=builder /app/trainapp .
 # Copiar frontend estático
 COPY frontend/ ./frontend/
 
+# Verificar que el frontend se copió correctamente
+RUN ls -la ./frontend/ && echo "✅ Frontend copiado correctamente"
+
 # Crear directorio para la base de datos
 RUN mkdir -p /data
 
