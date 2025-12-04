@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RunCoach Pro - Entrenamiento Inteligente</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo_fav.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Librería para renderizar Markdown -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="brand-logo">
+                <img src="assets/logo_runcoach.png" alt="RunCoach Pro" class="main-logo">
+            </div>
+            <h1 class="brand-title">
+                <span class="brand-name">RunCoach</span>
+                <span class="brand-pro">Pro</span>
+            </h1>
+            <p class="subtitle">
+                <span class="subtitle-name">Sergio</span>
+                <span class="subtitle-divider">•</span>
+                <span class="subtitle-stats" id="header-stats">¡Comienza tu primer entreno!</span>
+            </p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" onclick="showTab('dashboard')" title="Vista general y estadísticas">
+                <img src="assets/icons/layout.svg" alt="" class="tab-icon">
+                <span>Inicio</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('workouts')" title="Historial completo">
+                <img src="assets/icons/calendar.svg" alt="" class="tab-icon">
+                <span>Historial</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('new-workout')" title="Registrar sesión">
+                <img src="assets/icons/plus.svg" alt="" class="tab-icon">
+                <span>Registrar</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('plan')" title="Plan semanal con IA">
+                <img src="assets/icons/target.svg" alt="" class="tab-icon">
+                <span>Mi Plan</span>
+            </button>
+            <button class="tab-btn" onclick="showTab('progress')" title="Evolución y tendencias">
+                <img src="assets/icons/trending-up.svg" alt="" class="tab-icon">
+                <span>Progreso</span>
+            </button>
+        </nav>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <!-- Métricas de esta semana vs semana pasada -->
+            <div class="period-selector">
+                <button class="period-btn active" onclick="updateDashboardPeriod('week')">Esta Semana</button>
+                <button class="period-btn" onclick="updateDashboardPeriod('month')">Este Mes</button>
+                <button class="period-btn" onclick="updateDashboardPeriod('all')">Total</button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card stat-card-primary">
+                    <img src="assets/icons/activity.svg" alt="" class="stat-icon">
+                    <h3>Entrenos</h3>
+                    <p id="period-workouts" class="big-number">0</p>
+                    <span id="workouts-trend" class="trend"></span>
+                </div>
+                <div class="stat-card stat-card-secondary">
+                    <img src="assets/icons/arrow-right.svg" alt="" class="stat-icon">
+                    <h3>Distancia</h3>
+                    <p id="period-distance" class="big-number">0 km</p>
+                    <span id="distance-trend" class="trend"></span>
+                </div>
+                <div class="stat-card stat-card-accent">
+                    <img src="assets/icons/zap.svg" alt="" class="stat-icon">
+                    <h3>Ritmo Promedio</h3>
+                    <p id="period-pace" class="big-number">--:--</p>
+                    <span id="pace-trend" class="trend"></span>
+                </div>
+                <div class="stat-card stat-card-heart">
+                    <img src="assets/icons/heart.svg" alt="" class="stat-icon">
+                    <h3>FC Media</h3>
+                    <p id="period-hr" class="big-number">-- bpm</p>
+                    <span id="hr-trend" class="trend"></span>
+                </div>
+            </div>
+
+            <!-- Gráfica semanal simple -->
+            <div class="chart-card">
+                <h3>
+                    <img src="assets/icons/bar-chart.svg" alt="" class="inline-icon">
+                    Actividad Semanal (km)
+                </h3>
+                <div id="weekly-chart" class="simple-chart"></div>
+            </div>
+
+            <!-- Strava Integration Card -->
+            <div class="strava-card" id="strava-section">
+                <div class="strava-header">
+                    <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23fc4c02'%3E%3Cpath d='M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169'/%3E%3C/svg%3E" alt="Strava" class="strava-logo">
+                    <h3>Sincronización Strava</h3>
+                </div>
+                <div id="strava-connected" style="display: none;">
+                    <div class="strava-status">
+                        <span class="status-badge connected">✓ Conectado</span>
+                        <p class="last-sync">Última sincronización: <span id="strava-last-sync">--</span></p>
+                    </div>
+                    <button onclick="syncStrava()" class="btn btn-primary">🔄 Sincronizar Ahora</button>
+                    <p class="help-text">Los nuevos entrenos de Strava se importarán automáticamente</p>
+                </div>
+                <div id="strava-disconnected">
+                    <p class="strava-description">Conecta tu cuenta de Strava para importar tus entrenos automáticamente</p>
+                    <button onclick="connectStrava()" class="btn-strava">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='white'%3E%3Cpath d='M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169'/%3E%3C/svg%3E" alt="Strava">
+                        Conectar con Strava
+                    </button>
+                </div>
+            </div>
+
+            <div class="recent-workouts">
+                <h3>🔥 Últimas Sesiones</h3>
+                <div id="recent-workouts-list"></div>
+            </div>
+        </div>
+
+        <!-- Workouts List Tab -->
+        <div id="workouts" class="tab-content">
+            <div class="section-header">
+                <h2>📅 Historial Completo</h2>
+                <div class="filters">
+                    <select id="filter-type" onchange="filterWorkouts()" class="filter-select">
+                        <option value="all">Todos los tipos</option>
+                        <option value="easy">Carrera Suave</option>
+                        <option value="interval">Intervalos</option>
+                        <option value="tempo">Tempo</option>
+                        <option value="long_run">Carrera Larga</option>
+                    </select>
+                    <select id="filter-month" onchange="filterWorkouts()" class="filter-select">
+                        <option value="all">Últimos 3 meses</option>
+                        <option value="1">Este mes</option>
+                        <option value="3">Últimos 3 meses</option>
+                        <option value="6">Últimos 6 meses</option>
+                        <option value="12">Último año</option>
+                    </select>
+                </div>
+            </div>
+            <div id="workouts-list"></div>
+        </div>
+
+        <!-- New Workout Tab -->
+        <div id="new-workout" class="tab-content">
+            <h2>➕ Registrar Nueva Sesión</h2>
+            <p class="section-description">Elige cómo quieres registrar tu entreno</p>
+            
+            <!-- Tabs para seleccionar método de entrada -->
+            <div class="input-method-tabs">
+                <button class="input-tab-btn active" onclick="switchInputMethod('form')">Formulario Manual</button>
+                <button class="input-tab-btn" onclick="switchInputMethod('image')">Captura Apple Watch</button>
+            </div>
+
+            <!-- Método 1: Formulario manual -->
+            <div id="form-input" class="input-method active">
+                <form id="workout-form" class="form">
+                <div class="form-group">
+                    <label for="date">Fecha:</label>
+                    <input type="datetime-local" id="date" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="type">Tipo de Entreno:</label>
+                    <select id="type" required>
+                        <option value="easy">Carrera Suave</option>
+                        <option value="interval">Intervalos</option>
+                        <option value="tempo">Tempo</option>
+                        <option value="long_run">Carrera Larga</option>
+                    </select>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="distance">Distancia (km):</label>
+                        <input type="number" id="distance" step="0.01" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="duration">Duración (min):</label>
+                        <input type="number" id="duration" required>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="avg-pace">Ritmo Medio (min/km):</label>
+                        <input type="text" id="avg-pace" placeholder="5:30">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="avg-heart-rate">FC Media (bpm):</label>
+                        <input type="number" id="avg-heart-rate">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="avg-power">Potencia Media (W):</label>
+                        <input type="number" id="avg-power">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cadence">Cadencia (ppm):</label>
+                        <input type="number" id="cadence">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="elevation-gain">Desnivel + (m):</label>
+                        <input type="number" id="elevation-gain">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="calories">Calorías:</label>
+                        <input type="number" id="calories">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="feeling">¿Cómo te sentiste?:</label>
+                    <select id="feeling" required>
+                        <option value="great">Excelente</option>
+                        <option value="good">Bien</option>
+                        <option value="ok">Normal</option>
+                        <option value="tired">Cansado</option>
+                        <option value="exhausted">Agotado</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="notes">Notas:</label>
+                    <textarea id="notes" rows="4"></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Guardar Entreno</button>
+            </form>
+            </div>
+
+            <!-- Método 2: Captura de imagen -->
+            <div id="image-input" class="input-method">
+                <div class="form">
+                    <div class="form-group">
+                        <label for="workout-images">Captura(s) del Apple Watch:</label>
+                        <input type="file" id="workout-images" accept="image/*" multiple>
+                        <p class="help-text">Puedes subir una o varias capturas del entreno</p>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="image-notes">Notas adicionales (opcional):</label>
+                        <textarea id="image-notes" rows="4" placeholder="Sueño, sensaciones, molestias, contexto..."></textarea>
+                    </div>
+
+                    <button type="button" onclick="analyzeWorkoutFromImages()" class="btn btn-primary">Analizar con IA</button>
+                </div>
+            </div>
+
+            <div id="workout-result" class="result-box" style="display: none;"></div>
+            <div id="image-analysis-result" class="result-box" style="display: none;"></div>
+        </div>
+
+        <!-- Training Plan Tab -->
+        <div id="plan" class="tab-content">
+            <h2>Plan de Entrenamiento</h2>
+            
+            <div class="plan-options">
+                <div class="plan-option-card">
+                    <h3>📅 Plan Semanal Contextual</h3>
+                    <p>Genera un plan para esta semana basado en tu historial reciente y contexto</p>
+                    <button onclick="generateWeeklyPlan()" class="btn btn-primary">Generar Plan Semanal</button>
+                </div>
+
+                <div class="plan-option-card">
+                    <h3>🎯 Plan para Objetivo Específico</h3>
+                    <p>Crea un plan detallado para preparar una competición o alcanzar un objetivo</p>
+                    <form id="plan-form" class="form" style="margin-top: 15px;">
+                        <div class="form-group">
+                            <label for="goal">Objetivo:</label>
+                            <select id="goal" required>
+                                <option value="5k">5K</option>
+                                <option value="10k">10K</option>
+                                <option value="half_marathon">Media Maratón</option>
+                                <option value="marathon">Maratón</option>
+                                <option value="fitness">Mantenimiento/Fitness</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Generar Plan con IA</button>
+                    </form>
+                </div>
+            </div>
+
+            <div id="plan-result" class="result-box" style="display: none;">
+                <h3>Tu Plan de Entrenamiento:</h3>
+                <div id="plan-content" class="markdown-content"></div>
+                
+                <!-- Chat de conversación sobre el plan -->
+                <div id="plan-chat" class="chat-container" style="margin-top: 20px;">
+                    <div class="chat-messages" id="plan-messages"></div>
+                    <div class="chat-input-group">
+                        <input type="text" id="plan-question" placeholder="Pregunta algo sobre tu plan..." class="chat-input">
+                        <button onclick="askAboutPlan()" class="btn btn-secondary">Enviar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Report Tab -->
+        <div id="progress" class="tab-content">
+            <h2>📈 Evolución y Análisis</h2>
+            
+            <form id="report-form" class="form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="period-start">Desde:</label>
+                        <input type="date" id="period-start" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="period-end">Hasta:</label>
+                        <input type="date" id="period-end" required>
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary">Generar Informe con IA</button>
+            </form>
+
+            <div id="report-result" class="result-box" style="display: none;">
+                <h3>Informe de Progreso:</h3>
+                <div id="report-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="loading" class="loading" style="display: none;">
+        <div class="spinner"></div>
+        <p>Procesando con IA...</p>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

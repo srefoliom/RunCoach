@@ -1,0 +1,37 @@
+# Archivos de desarrollo
+.env
+.env.local
+*.db
+*.db-shm
+*.db-wal
+
+# Binarios compilados
+backend/*.exe
+backend/trainapp
+backend/trainapp.exe
+backend/scripts/*.exe
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Node modules (si usas npm en algún momento)
+node_modules/
+
+# Logs
+*.log
+
+# Temporales
+tmp/
+temp/

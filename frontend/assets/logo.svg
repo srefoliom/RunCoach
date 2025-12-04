@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:1"/>
+      <stop offset="100%" style="stop-color:#ec4899;stop-opacity:1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Círculo de fondo con gradiente -->
+  <circle cx="100" cy="100" r="90" fill="url(#logoGrad)" opacity="0.2"/>
+  <circle cx="100" cy="100" r="85" fill="none" stroke="url(#logoGrad)" stroke-width="3"/>
+  
+  <!-- Ritmo cardíaco -->
+  <path d="M40 100 L65 65 L80 100 L95 50 L110 100 L125 80 L140 100 L160 100" 
+        stroke="url(#logoGrad)" 
+        stroke-width="6" 
+        fill="none" 
+        stroke-linecap="round" 
+        stroke-linejoin="round"/>
+  
+  <!-- Corredor estilizado -->
+  <path d="M100 130 Q110 145 95 155" 
+        stroke="url(#logoGrad)" 
+        stroke-width="5" 
+        fill="none" 
+        stroke-linecap="round"/>
+</svg>

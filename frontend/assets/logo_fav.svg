@@ -1,0 +1,54 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Tu gradiente de marca: Teal a Azul -->
+    <linearGradient id="proGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00d4aa;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#00a8e8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- Grupo centrado -->
+  <g transform="translate(25, 50)">
+    
+    <!-- ZAPATILLA: Forma anatómica corregida -->
+    <!-- Dibujada con curvas suaves para simular una zapatilla técnica de running -->
+    <path d="M 430,220 
+             C 430,190 380,180 340,180 
+             C 320,180 300,160 270,160 
+             C 210,160 150,200 100,220 
+             C 60,235 30,260 30,300 
+             C 30,330 60,340 90,345 
+             L 380,360 
+             C 430,360 450,320 450,290 
+             C 450,260 440,240 430,220 Z" 
+          fill="url(#proGradient)" />
+
+    <!-- SUELA: Detalle inferior para darle aspecto deportivo -->
+    <path d="M 90,345 
+             C 150,355 250,340 380,360 
+             C 420,365 445,350 450,290 
+             L 450,310 
+             C 450,350 410,390 360,390 
+             L 100,380 
+             C 60,380 40,350 40,320 
+             L 30,300 
+             C 35,320 50,340 90,345 Z" 
+          fill="#00a8e8" opacity="0.6"/>
+
+    <!-- RAYO: Cortando la zapatilla (Espacio negativo) -->
+    <!-- El stroke (borde) grueso del color de fondo crea el corte visual -->
+    <path d="M 280,60 
+             L 210,240 
+             H 290 
+             L 230,440 
+             L 410,190 
+             H 320 
+             L 360,60 
+             Z" 
+          fill="url(#proGradient)" 
+          stroke="#0f0f23" 
+          stroke-width="20" 
+          stroke-linejoin="round"
+          paint-order="stroke" />
+  </g>
+</svg>
