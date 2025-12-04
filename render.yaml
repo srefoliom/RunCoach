@@ -12,6 +12,8 @@ services:
         value: https://runcoach-pro.onrender.com
       - key: OPENAI_API_KEY
         sync: false
+      - key: OPENAI_ASSISTANT_ID
+        sync: false
       - key: STRAVA_CLIENT_ID
         sync: false
       - key: STRAVA_CLIENT_SECRET
