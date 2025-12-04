@@ -62,9 +62,18 @@ func StravaCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	// Redirigir al frontend con éxito
 	baseURL := os.Getenv("BASE_URL")
 	if baseURL == "" {
-		baseURL = "http://localhost:8080"
+		// Intentar construir la URL base desde el request
+		scheme := "https"
+		if r.TLS == nil {
+			scheme = "http"
+		}
+		baseURL = scheme + "://" + r.Host
 	}
-	http.Redirect(w, r, baseURL+"/?strava=connected", http.StatusTemporaryRedirect)
+
+	redirectURL := baseURL + "/?strava=connected"
+	log.Printf("🔄 Redirigiendo a: %s (BASE_URL env: %s)", redirectURL, os.Getenv("BASE_URL"))
+
+	http.Redirect(w, r, redirectURL, http.StatusTemporaryRedirect)
 }
 
 // StravaSyncHandler sincroniza actividades de Strava
