@@ -1,5 +1,7 @@
-// API Base URL
-const API_URL = 'http://localhost:8080/api';
+// API Base URL - Automática según el entorno
+const API_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:8080/api'
+    : `${window.location.origin}/api`;
 
 // Estado global
 let currentUser = null;
