@@ -137,10 +137,10 @@ func StravaSyncHandler(w http.ResponseWriter, r *http.Request) {
 		lastSyncTimestamp = 0
 	}
 
-	// Obtener actividades de Strava (últimas 30 días si no hay sincronización previa)
+	// Obtener actividades de Strava (últimas 180 días si no hay sincronización previa)
 	after := lastSyncTimestamp
 	if after == 0 {
-		after = time.Now().AddDate(0, 0, -30).Unix()
+		after = time.Now().AddDate(0, 0, -180).Unix()
 	}
 
 	activities, err := client.GetActivities(accessToken, after, 50)
