@@ -7,6 +7,7 @@ import (
 
 	"trainapp/database"
 	"trainapp/handlers"
+	"trainapp/middleware"
 	"trainapp/services"
 
 	"github.com/joho/godotenv"
@@ -28,6 +29,7 @@ func main() {
 	defer database.Close()
 
 	// Inicializar servicios
+	services.InitializeAuth(os.Getenv("JWT_SECRET"))
 	services.InitializeStrava()
 	log.Println("✅ Servicios inicializados")
 
@@ -49,22 +51,27 @@ func main() {
 	fs := http.FileServer(http.Dir(frontendPath))
 	mux.Handle("/", fs)
 
-	// API endpoints
-	mux.HandleFunc("/api/workouts", handlers.WorkoutsHandler)
-	mux.HandleFunc("/api/workouts/", handlers.WorkoutDetailHandler)
-	mux.HandleFunc("/api/training-plan", handlers.TrainingPlanHandler)
-	mux.HandleFunc("/api/weekly-plan", handlers.WeeklyPlanHandler)
-	mux.HandleFunc("/api/workout-analysis", handlers.WorkoutAnalysisHandler)
-	mux.HandleFunc("/api/workout-analysis-image", handlers.WorkoutAnalysisImageHandler)
-	mux.HandleFunc("/api/workout-analysis-form", handlers.WorkoutAnalysisFormHandler)
-	mux.HandleFunc("/api/progress-report", handlers.ProgressReportHandler)
-	mux.HandleFunc("/api/user", handlers.UserHandler)
+	// Auth endpoints (públicos)
+	mux.HandleFunc("/api/auth/register", handlers.RegisterHandler)
+	mux.HandleFunc("/api/auth/login", handlers.LoginHandler)
+	mux.HandleFunc("/api/auth/me", middleware.AuthMiddleware(handlers.MeHandler))
 
-	// Strava endpoints
-	mux.HandleFunc("/api/strava/auth", handlers.StravaAuthHandler)
-	mux.HandleFunc("/api/strava/callback", handlers.StravaCallbackHandler)
-	mux.HandleFunc("/api/strava/sync", handlers.StravaSyncHandler)
-	mux.HandleFunc("/api/strava/status", handlers.StravaStatusHandler)
+	// API endpoints (protegidos)
+	mux.HandleFunc("/api/workouts", middleware.AuthMiddleware(handlers.WorkoutsHandler))
+	mux.HandleFunc("/api/workouts/", middleware.AuthMiddleware(handlers.WorkoutDetailHandler))
+	mux.HandleFunc("/api/training-plan", middleware.AuthMiddleware(handlers.TrainingPlanHandler))
+	mux.HandleFunc("/api/weekly-plan", middleware.AuthMiddleware(handlers.WeeklyPlanHandler))
+	mux.HandleFunc("/api/workout-analysis", middleware.AuthMiddleware(handlers.WorkoutAnalysisHandler))
+	mux.HandleFunc("/api/workout-analysis-image", middleware.AuthMiddleware(handlers.WorkoutAnalysisImageHandler))
+	mux.HandleFunc("/api/workout-analysis-form", middleware.AuthMiddleware(handlers.WorkoutAnalysisFormHandler))
+	mux.HandleFunc("/api/progress-report", middleware.AuthMiddleware(handlers.ProgressReportHandler))
+	mux.HandleFunc("/api/user", middleware.AuthMiddleware(handlers.UserHandler))
+
+	// Strava endpoints (protegidos)
+	mux.HandleFunc("/api/strava/auth", middleware.AuthMiddleware(handlers.StravaAuthHandler))
+	mux.HandleFunc("/api/strava/callback", handlers.StravaCallbackHandler) // Callback no requiere auth
+	mux.HandleFunc("/api/strava/sync", middleware.AuthMiddleware(handlers.StravaSyncHandler))
+	mux.HandleFunc("/api/strava/status", middleware.AuthMiddleware(handlers.StravaStatusHandler))
 
 	// Configurar CORS
 	c := cors.New(cors.Options{

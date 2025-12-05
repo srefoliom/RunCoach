@@ -41,7 +41,9 @@ func StravaCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Guardar tokens en la base de datos (asociados al usuario)
-	userID := 1 // Por ahora hardcodeado, deberías obtenerlo de la sesión
+	// TODO: Obtener userID del state parameter en el callback
+	// Por ahora, usamos userID=1 hasta implementar state parameter en OAuth
+	userID := 1
 
 	_, err = database.DB.Exec(`
 		INSERT INTO strava_tokens (user_id, access_token, refresh_token, expires_at, athlete_id)
@@ -80,7 +82,8 @@ func StravaCallbackHandler(w http.ResponseWriter, r *http.Request) {
 func StravaSyncHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	userID := 1 // Por ahora hardcodeado
+	// Obtener userID del contexto
+	userID := r.Context().Value("userID").(int)
 
 	// Obtener tokens del usuario
 	var accessToken, refreshToken string
@@ -213,11 +216,12 @@ func StravaSyncHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(response)
 }
 
-// StravaStatusHandler verifica el estado de la conexión con Strava
+// StravaStatusHandler retorna el estado de la conexión con Strava
 func StravaStatusHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	userID := 1 // Por ahora hardcodeado
+	// Obtener userID del contexto
+	userID := r.Context().Value("userID").(int)
 
 	var athleteID int
 	var lastSync *time.Time

@@ -7,8 +7,50 @@ const API_URL = window.location.hostname === 'localhost' || window.location.host
 let currentUser = null;
 let allWorkouts = [];
 
+// Helper para obtener headers con autenticación
+function getAuthHeaders() {
+    const token = localStorage.getItem('auth_token');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+    };
+}
+
+// Wrapper para fetch con autenticación automática
+async function fetchAPI(url, options = {}) {
+    const headers = { ...getAuthHeaders(), ...options.headers };
+    const response = await fetch(url, { ...options, headers });
+    
+    if (response.status === 401) {
+        logout();
+        throw new Error('No autorizado');
+    }
+    
+    return response;
+}
+
+// Verificar autenticación
+function checkAuth() {
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        window.location.href = '/login.html';
+        return false;
+    }
+    return true;
+}
+
+// Logout
+function logout() {
+    localStorage.removeItem('auth_token');
+    localStorage.removeItem('user');
+    window.location.href = '/login.html';
+}
+
 // Inicializar la aplicación
 document.addEventListener('DOMContentLoaded', () => {
+    // Verificar autenticación primero
+    if (!checkAuth()) return;
+    
     loadUser();
     loadWorkouts();
     setupEventListeners();
@@ -405,7 +447,15 @@ function showTab(tabName) {
 // Cargar información del usuario
 async function loadUser() {
     try {
-        const response = await fetch(`${API_URL}/user`);
+        const response = await fetch(`${API_URL}/auth/me`, {
+            headers: getAuthHeaders()
+        });
+        
+        if (response.status === 401) {
+            logout();
+            return;
+        }
+        
         const user = await response.json();
         currentUser = user;
         
@@ -422,7 +472,7 @@ async function loadUser() {
 // Cargar workouts
 async function loadWorkouts() {
     try {
-        const response = await fetch(`${API_URL}/workouts`);
+        const response = await fetchAPI(`${API_URL}/workouts`);
         allWorkouts = await response.json() || [];
         
         updateDashboardStats();
@@ -1217,7 +1267,7 @@ updateDashboardStats = function() {
 // Verificar estado de conexión con Strava
 async function checkStravaStatus() {
     try {
-        const response = await fetch(`${API_URL}/strava/status`);
+        const response = await fetchAPI(`${API_URL}/strava/status`);
         const data = await response.json();
         
         if (data.connected) {
@@ -1247,7 +1297,7 @@ async function syncStrava() {
     try {
         showLoading(true);
         
-        const response = await fetch(`${API_URL}/strava/sync`, {
+        const response = await fetchAPI(`${API_URL}/strava/sync`, {
             method: 'POST'
         });
         

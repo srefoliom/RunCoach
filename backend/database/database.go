@@ -45,12 +45,25 @@ func createTables() error {
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			name TEXT NOT NULL,
 			email TEXT UNIQUE NOT NULL,
+			password_hash TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		)`,
+		`CREATE TABLE IF NOT EXISTS runner_profiles (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL UNIQUE,
 			age INTEGER,
 			weight REAL,
 			height REAL,
+			vo2max REAL,
+			weekly_km_target REAL,
+			race_goal TEXT,
+			race_goal_date DATE,
+			training_level TEXT DEFAULT 'intermediate',
 			fitness_level TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+			updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
 		`CREATE TABLE IF NOT EXISTS workouts (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -119,23 +132,20 @@ func createTables() error {
 		}
 	}
 
-	// Insertar usuario por defecto si no existe
-	var count int
-	err := DB.QueryRow("SELECT COUNT(*) FROM users").Scan(&count)
-	if err != nil {
-		return err
+	// Crear índices para optimización
+	indexes := []string{
+		`CREATE INDEX IF NOT EXISTS idx_workouts_user_date ON workouts(user_id, date DESC)`,
+		`CREATE INDEX IF NOT EXISTS idx_workouts_strava_id ON workouts(strava_activity_id)`,
+		`CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)`,
 	}
 
-	if count == 0 {
-		_, err = DB.Exec(`
-			INSERT INTO users (name, email, age, weight, height, fitness_level) 
-			VALUES (?, ?, ?, ?, ?, ?)`,
-			"Sergio", "sergio@trainapp.com", 33, 72.0, 180.0, "advanced")
-		if err != nil {
+	for _, query := range indexes {
+		if _, err := DB.Exec(query); err != nil {
 			return err
 		}
-		log.Println("Usuario Sergio creado")
 	}
+
+	// NO crear usuario por defecto - ahora se registran manualmente
 
 	return nil
 }
