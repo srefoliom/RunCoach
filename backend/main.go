@@ -40,12 +40,12 @@ func main() {
 		frontendPath = "../frontend"
 	}
 	log.Printf("📂 Sirviendo frontend desde: %s", frontendPath)
-	
+
 	// Verificar que el directorio existe
 	if _, err := os.Stat(frontendPath); os.IsNotExist(err) {
 		log.Printf("⚠️  ADVERTENCIA: El directorio frontend no existe en %s", frontendPath)
 	}
-	
+
 	fs := http.FileServer(http.Dir(frontendPath))
 	mux.Handle("/", fs)
 
