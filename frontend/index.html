@@ -20,11 +20,26 @@
                 <span class="brand-pro">Pro</span>
             </h1>
             <p class="subtitle">
-                <span class="subtitle-name">Sergio</span>
+                <span class="subtitle-name" id="user-name">Sergio</span>
                 <span class="subtitle-divider">•</span>
                 <span class="subtitle-stats" id="header-stats">¡Comienza tu primer entreno!</span>
             </p>
+            <div class="user-menu">
+                <button class="user-button" onclick="toggleUserMenu()">
+                    <img src="assets/icons/user.svg" alt="Usuario">
+                    <span id="user-menu-name">Usuario</span>
+                </button>
+                <div class="user-dropdown" id="user-dropdown">
+                    <button class="user-dropdown-item danger" onclick="handleLogout()">
+                        <img src="assets/icons/log-out.svg" alt="Cerrar sesión">
+                        Cerrar Sesión
+                    </button>
+                </div>
+            </div>
         </header>
+
+        <!-- Toast Container -->
+        <div class="toast-container" id="toast-container"></div>
 
         <nav class="tabs">
             <button class="tab-btn active" onclick="showTab('dashboard')" title="Vista general y estadísticas">

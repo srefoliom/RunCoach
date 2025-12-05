@@ -46,6 +46,80 @@ function logout() {
     window.location.href = '/login.html';
 }
 
+// Toast Notification System
+function showToast(message, type = 'info', title = '') {
+    const container = document.getElementById('toast-container');
+    if (!container) {
+        const newContainer = document.createElement('div');
+        newContainer.id = 'toast-container';
+        newContainer.className = 'toast-container';
+        document.body.appendChild(newContainer);
+    }
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    
+    const icons = {
+        success: '✓',
+        error: '✕',
+        warning: '⚠',
+        info: 'ℹ'
+    };
+    
+    const titles = {
+        success: title || 'Éxito',
+        error: title || 'Error',
+        warning: title || 'Aviso',
+        info: title || 'Información'
+    };
+    
+    toast.innerHTML = `
+        <div class="toast-icon">${icons[type]}</div>
+        <div class="toast-content">
+            <div class="toast-title">${titles[type]}</div>
+            <div class="toast-message">${message}</div>
+        </div>
+        <button class="toast-close" onclick="closeToast(this)">×</button>
+    `;
+    
+    document.getElementById('toast-container').appendChild(toast);
+    
+    // Auto-cerrar después de 5 segundos
+    setTimeout(() => {
+        closeToast(toast.querySelector('.toast-close'));
+    }, 5000);
+}
+
+function closeToast(button) {
+    const toast = button.parentElement;
+    toast.classList.add('hiding');
+    setTimeout(() => {
+        toast.remove();
+    }, 300);
+}
+
+// User Menu
+function toggleUserMenu() {
+    const dropdown = document.getElementById('user-dropdown');
+    dropdown.classList.toggle('active');
+}
+
+// Cerrar menú al hacer click fuera
+document.addEventListener('click', (e) => {
+    const userMenu = document.querySelector('.user-menu');
+    const dropdown = document.getElementById('user-dropdown');
+    if (dropdown && !userMenu.contains(e.target)) {
+        dropdown.classList.remove('active');
+    }
+});
+
+function handleLogout() {
+    showToast('Cerrando sesión...', 'info');
+    setTimeout(() => {
+        logout();
+    }, 500);
+}
+
 // Inicializar la aplicación
 document.addEventListener('DOMContentLoaded', () => {
     // Verificar autenticación primero
@@ -59,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Verificar si venimos del callback de Strava
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('strava') === 'connected') {
-        alert('✅ ¡Strava conectado exitosamente! Sincronizando entrenamientos...');
+        showToast('¡Strava conectado exitosamente! Sincronizando entrenamientos...', 'success');
         syncStrava();
         // Limpiar URL
         window.history.replaceState({}, document.title, window.location.pathname);
@@ -104,7 +178,7 @@ async function analyzeWorkoutFromImages() {
     const notes = document.getElementById('image-notes').value;
     
     if (!fileInput.files || fileInput.files.length === 0) {
-        alert('Por favor, selecciona al menos una imagen');
+        showToast('Por favor, selecciona al menos una imagen', 'warning');
         return;
     }
     
@@ -118,9 +192,8 @@ async function analyzeWorkoutFromImages() {
             imageURLs.push(base64);
         }
         
-        const response = await fetch(`${API_URL}/workout-analysis-image`, {
+        const response = await fetchAPI(`${API_URL}/workout-analysis-image`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 image_urls: imageURLs,
                 notes: notes 
@@ -178,11 +251,11 @@ async function analyzeWorkoutFromImages() {
             resultDiv.style.display = 'block';
             resultDiv.scrollIntoView({ behavior: 'smooth' });
         } else {
-            alert('Error al analizar el entreno con imágenes');
+            showToast('Error al analizar el entreno con imágenes', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -203,9 +276,8 @@ async function askAboutImageAnalysis() {
         showLoading(true);
         
         // Enviar pregunta al backend
-        const response = await fetch(`${API_URL}/workout-analysis-image`, {
+        const response = await fetchAPI(`${API_URL}/workout-analysis-image`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 image_urls: [], // Ya no necesitamos las imágenes
                 notes: '',
@@ -223,11 +295,11 @@ async function askAboutImageAnalysis() {
             const messagesDiv = document.getElementById('image-analysis-messages');
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         } else {
-            alert('Error al procesar la pregunta');
+            showToast('Error al procesar la pregunta', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -271,25 +343,24 @@ async function saveExtractedWorkout(workoutData) {
             notes: workoutData.notes || 'Entreno importado desde captura del Apple Watch'
         };
         
-        const response = await fetch(`${API_URL}/workouts`, {
+        const response = await fetchAPI(`${API_URL}/workouts`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(workout)
         });
         
         if (response.ok) {
-            alert('✅ ¡Entreno guardado en el historial exitosamente!');
+            showToast('¡Entreno guardado en el historial exitosamente!', 'success');
             await loadWorkouts();
             
             // Cambiar a la pestaña de workouts para ver el entreno guardado
             showTab('workouts');
             document.querySelector('.tab-btn[onclick*="workouts"]').classList.add('active');
         } else {
-            alert('❌ Error al guardar el entreno');
+            showToast('Error al guardar el entreno', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -309,9 +380,8 @@ function fileToBase64(file) {
 async function generateWeeklyPlan() {
     try {
         showLoading(true);
-        const response = await fetch(`${API_URL}/weekly-plan`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+        const response = await fetchAPI(`${API_URL}/weekly-plan`, {
+            method: 'POST'
         });
         
         if (response.ok) {
@@ -334,11 +404,11 @@ async function generateWeeklyPlan() {
             // Scroll al resultado
             resultDiv.scrollIntoView({ behavior: 'smooth' });
         } else {
-            alert('Error al generar el plan semanal');
+            showToast('Error al generar el plan semanal', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -359,9 +429,8 @@ async function askAboutPlan() {
         showLoading(true);
         
         // Enviar pregunta al backend
-        const response = await fetch(`${API_URL}/weekly-plan`, {
+        const response = await fetchAPI(`${API_URL}/weekly-plan`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question: question })
         });
         
@@ -375,11 +444,11 @@ async function askAboutPlan() {
             const messagesDiv = document.getElementById('plan-messages');
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         } else {
-            alert('Error al procesar la pregunta');
+            showToast('Error al procesar la pregunta', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -447,25 +516,23 @@ function showTab(tabName) {
 // Cargar información del usuario
 async function loadUser() {
     try {
-        const response = await fetch(`${API_URL}/auth/me`, {
-            headers: getAuthHeaders()
-        });
-        
-        if (response.status === 401) {
-            logout();
-            return;
-        }
-        
+        const response = await fetchAPI(`${API_URL}/auth/me`);
         const user = await response.json();
         currentUser = user;
         
-        // Actualizar solo elementos que existen en el nuevo diseño
+        // Actualizar nombre en el header y menú
         const userName = document.getElementById('user-name');
         if (userName) {
             userName.textContent = user.name;
         }
+        
+        const userMenuName = document.getElementById('user-menu-name');
+        if (userMenuName) {
+            userMenuName.textContent = user.name.split(' ')[0]; // Solo primer nombre
+        }
     } catch (error) {
         console.error('Error cargando usuario:', error);
+        showToast('Error al cargar información del usuario', 'error');
     }
 }
 
@@ -665,9 +732,8 @@ async function handleWorkoutSubmit(e) {
         showLoading(true);
         
         // Primero analizar con OpenAI
-        const response = await fetch(`${API_URL}/workout-analysis-form`, {
+        const response = await fetchAPI(`${API_URL}/workout-analysis-form`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(workoutData)
         });
         
@@ -734,14 +800,13 @@ async function saveWorkoutFromForm(workoutData) {
             workoutData.date = workoutData.date + ':00Z';
         }
         
-        const response = await fetch(`${API_URL}/workouts`, {
+        const response = await fetchAPI(`${API_URL}/workouts`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(workoutData)
         });
         
         if (response.ok) {
-            alert('✅ ¡Entreno guardado en el historial exitosamente!');
+            showToast('¡Entreno guardado en el historial exitosamente!', 'success');
             document.getElementById('workout-form').reset();
             
             // Configurar fecha actual nuevamente
@@ -754,11 +819,11 @@ async function saveWorkoutFromForm(workoutData) {
             // Cambiar a la pestaña de workouts
             showTab('workouts');
         } else {
-            alert('❌ Error al guardar el entreno');
+            showToast('Error al guardar el entreno', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('❌ Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -779,9 +844,8 @@ async function askAboutFormAnalysis() {
         showLoading(true);
         
         // Enviar pregunta al backend
-        const response = await fetch(`${API_URL}/workout-analysis-form`, {
+        const response = await fetchAPI(`${API_URL}/workout-analysis-form`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question: question })
         });
         
@@ -795,11 +859,11 @@ async function askAboutFormAnalysis() {
             const messagesDiv = document.getElementById('form-analysis-messages');
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         } else {
-            alert('Error al procesar la pregunta');
+            showToast('Error al procesar la pregunta', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -811,9 +875,8 @@ async function analyzeWorkout(workoutId) {
     
     try {
         showLoading(true);
-        const response = await fetch(`${API_URL}/workout-analysis`, {
+        const response = await fetchAPI(`${API_URL}/workout-analysis`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ workout_id: workoutId })
         });
         
@@ -876,9 +939,8 @@ async function askAboutAnalysis(workoutId) {
         showLoading(true);
         
         // Enviar pregunta al backend (usando el mismo endpoint con la pregunta)
-        const response = await fetch(`${API_URL}/workout-analysis`, {
+        const response = await fetchAPI(`${API_URL}/workout-analysis`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 workout_id: workoutId,
                 question: question 
@@ -895,11 +957,11 @@ async function askAboutAnalysis(workoutId) {
             const messagesDiv = document.getElementById(`analysis-messages-${workoutId}`);
             messagesDiv.scrollTop = messagesDiv.scrollHeight;
         } else {
-            alert('Error al procesar la pregunta');
+            showToast('Error al procesar la pregunta', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -913,9 +975,8 @@ async function handlePlanSubmit(e) {
     
     try {
         showLoading(true);
-        const response = await fetch(`${API_URL}/training-plan`, {
+        const response = await fetchAPI(`${API_URL}/training-plan`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 user_id: currentUser ? currentUser.id : 1,
                 goal: goal 
@@ -927,11 +988,11 @@ async function handlePlanSubmit(e) {
             document.getElementById('plan-content').textContent = result.plan;
             document.getElementById('plan-result').style.display = 'block';
         } else {
-            alert('Error al generar el plan de entrenamiento');
+            showToast('Error al generar el plan de entrenamiento', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -946,9 +1007,8 @@ async function handleReportSubmit(e) {
     
     try {
         showLoading(true);
-        const response = await fetch(`${API_URL}/progress-report`, {
+        const response = await fetchAPI(`${API_URL}/progress-report`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
                 user_id: currentUser ? currentUser.id : 1,
                 period_start: periodStart,
@@ -961,11 +1021,11 @@ async function handleReportSubmit(e) {
             document.getElementById('report-content').textContent = result.report;
             document.getElementById('report-result').style.display = 'block';
         } else {
-            alert('Error al generar el informe');
+            showToast('Error al generar el informe', 'error');
         }
     } catch (error) {
         console.error('Error:', error);
-        alert('Error de conexión');
+        showToast('Error de conexión', 'error');
     } finally {
         showLoading(false);
     }
@@ -1306,20 +1366,20 @@ async function syncStrava() {
             console.log('Resultado de sincronización:', result);
             
             if (result.imported > 0) {
-                alert(`✅ Se importaron ${result.imported} nuevos entrenamientos de Strava!`);
+                showToast(`Se importaron ${result.imported} nuevos entrenamientos de Strava!`, 'success');
                 await loadWorkouts(); // Recargar lista de workouts
                 checkStravaStatus(); // Actualizar estado
             } else {
-                alert('ℹ️ No hay entrenamientos nuevos para sincronizar');
+                showToast('No hay entrenamientos nuevos para sincronizar', 'info');
             }
         } else {
             const error = await response.text();
             console.error('Error de Strava:', error);
-            alert('❌ Error al sincronizar: ' + error);
+            showToast('Error al sincronizar: ' + error, 'error');
         }
     } catch (error) {
         console.error('Error sincronizando Strava:', error);
-        alert('❌ Error de conexión al sincronizar con Strava');
+        showToast('Error de conexión al sincronizar con Strava', 'error');
     } finally {
         showLoading(false);
     }
