@@ -2,52 +2,60 @@
 
 **RunCoach Pro** es tu aplicación de entrenamiento personal de running potenciada con inteligencia artificial. Diseñada específicamente para runners que buscan optimizar su rendimiento con análisis personalizados, planes adaptativos y seguimiento inteligente.
 
-## 🎨 Diseño
+## ✨ Características
 
-- **Tema Dark Profesional**: Paleta de colores cian-azul optimizada para uso prolongado
-- **Branding Moderno**: Logo con gradiente y animaciones sutiles
-- **Responsive Design**: Experiencia perfecta en desktop y mobile
-- **Visualizaciones Inteligentes**: Gráficas de barras, tendencias y métricas comparativas
+- 🔐 **Autenticación JWT** - Sistema seguro de usuarios con bcrypt
+- 📊 **Dashboard Inteligente** - Métricas comparativas y tendencias en tiempo real
+- 📝 **Registro Dual** - Manual o por análisis de imágenes con IA
+- 🤖 **Chat con IA** - Conversación contextual sobre entrenamientos y planes
+- 📈 **Historial Avanzado** - Filtros, análisis individual y métricas completas
+- 📅 **Planificación IA** - Genera planes semanales adaptados a tu perfil
+- 🔗 **Integración Strava** - Sincroniza entrenamientos automáticamente
+- 🎨 **UI Moderna** - Tema dark profesional con toasts y animaciones
 
-## ⚡ Características Principales
+## 🛠️ Stack Tecnológico
 
-### Dashboard Inteligente
-- **Métricas Comparativas**: Visualiza tu rendimiento semanal, mensual o total con comparación automática vs período anterior
-- **Tendencias en Tiempo Real**: Indicadores visuales de mejora/empeora en distancia, ritmo, FC
-- **Gráfica Semanal**: Visualización de actividad diaria con distancias
-- **Últimas Sesiones**: Acceso rápido a tus entrenamientos recientes
+**Backend:**
+- Go 1.21+ con SQLite (modernc.org/sqlite)
+- JWT authentication con bcrypt
+- OpenAI API para coaching inteligente
 
-### Registro Dual de Entrenos
-- **Formulario Manual**: Entrada rápida con todos los campos relevantes
-- **Análisis por Captura**: Sube screenshots de Apple Watch y obtén análisis automático con IA
-- **Análisis Pre-Guardado**: Ambos métodos analizan con IA antes de guardar para máxima calidad
+**Frontend:**
+- Vanilla JavaScript (sin frameworks)
+- CSS3 con variables y animaciones
+- Marked.js para renderizado Markdown
 
-### Historial Avanzado
-- **Filtros Inteligentes**: Por tipo de entreno y período temporal
-- **Análisis Individual**: Cada entreno puede ser re-analizado con conversación contextual
-- **Métricas Completas**: Distancia, duración, ritmo, FC, potencia, cadencia, desnivel
+## 📦 Despliegue en Producción
 
-### Planificación con IA
-- **Plan Semanal Automático**: Genera microciclos adaptados a tu perfil y carga reciente
-- **Conversación Contextual**: Pregunta y ajusta el plan en tiempo real
-- **Renderizado Markdown**: Planes estructurados y fáciles de seguir
+Ver guía completa: **[FLY_DEPLOY.md](./FLY_DEPLOY.md)**
 
-### Informes de Progreso
-- **Análisis Periódico**: Evalúa tu evolución en cualquier rango de fechas
-- **Comparativas Históricas**: Visualiza mejoras vs períodos anteriores
-- **Recomendaciones Personalizadas**: Ajustes basados en tu rendimiento
+### Resumen rápido:
 
-## 🛠️ Tecnologías
+```bash
+# 1. Instalar Fly CLI
+pwsh -Command "iwr https://fly.io/install.ps1 -useb | iex"
 
-### Backend
-- **Go 1.21** - Servidor HTTP y API REST
-- **SQLite** (modernc.org/sqlite) - Base de datos pure Go sin dependencias de CGO
-- **OpenAI API** - Agente de IA especializado en coaching de running
+# 2. Autenticarse
+fly auth login
 
-### Frontend
-- **HTML5, CSS3, JavaScript** - Interfaz responsive sin frameworks
+# 3. Crear app y volumen
+fly apps create runcoach-pro
+fly volumes create trainapp_data --region mad --size 1
 
-## 📋 Requisitos
+# 4. Configurar secretos
+fly secrets set JWT_SECRET="tu-secret-seguro"
+fly secrets set OPENAI_API_KEY="sk-..."
+fly secrets set STRAVA_CLIENT_ID="..."
+fly secrets set STRAVA_CLIENT_SECRET="..."
+fly secrets set STRAVA_REDIRECT_URI="https://runcoach-pro.fly.dev/api/strava/callback"
+
+# 5. Desplegar
+fly deploy
+```
+
+## 🚀 Desarrollo Local
+
+### Requisitos
 
 - Go 1.21 o superior
 - Cuenta de OpenAI con API Key

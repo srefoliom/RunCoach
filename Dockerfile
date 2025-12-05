@@ -22,7 +22,7 @@ FROM alpine:latest
 # Instalar dependencias runtime para SQLite
 RUN apk --no-cache add ca-certificates sqlite-libs
 
-WORKDIR /root/
+WORKDIR /app
 
 # Copiar binario compilado
 COPY --from=builder /app/trainapp .
@@ -34,19 +34,19 @@ RUN chmod +x start.sh
 # Copiar frontend estático
 COPY frontend/ ./frontend/
 
-# Copiar base de datos como plantilla (se copiará a /data si no existe)
+# Copiar base de datos como plantilla
 COPY backend/trainapp.db ./trainapp_template.db
 
-# Verificar que el frontend se copió correctamente
-RUN ls -la ./frontend/ && echo "✅ Frontend copiado correctamente"
+# Crear directorio para datos persistentes
+RUN mkdir -p /data
 
 # Exponer puerto
 EXPOSE 8080
 
 # Variables de entorno por defecto
 ENV PORT=8080
-ENV DATABASE_PATH=/root/trainapp.db
-ENV FRONTEND_PATH=/root/frontend
+ENV DATABASE_PATH=/data/trainapp.db
+ENV FRONTEND_PATH=/app/frontend
 
 # Comando de inicio
 CMD ["./start.sh"]

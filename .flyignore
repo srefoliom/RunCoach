@@ -1,0 +1,26 @@
+# .flyignore - Archivos que no se suben a Fly.io
+
+# Usar .dockerignore como base
+.git/
+.gitignore
+.vscode/
+.idea/
+.doc/
+
+# Documentación
+README.md
+DEPLOY.md
+
+# Archivos de desarrollo
+.env
+.env.local
+*.log
+
+# Binarios locales
+*.exe
+trainapp
+
+# Scripts de desarrollo
+backend/scripts/migrate_*.go
+backend/scripts/update_db.go
+frontend/replace_alerts.ps1

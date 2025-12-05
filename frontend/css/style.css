@@ -1333,6 +1333,7 @@ textarea {
 .user-menu {
     position: relative;
     display: inline-block;
+    margin-top: 10px;
 }
 
 .user-button {
@@ -1357,20 +1358,20 @@ textarea {
 .user-button img {
     width: 20px;
     height: 20px;
+    filter: invert(58%) sepia(89%) saturate(1275%) hue-rotate(161deg) brightness(98%) contrast(101%);
 }
 
 .user-dropdown {
     position: absolute;
-    top: 100%;
-    right: 0;
+    top: -12px;
+    left: 120px;
     margin-top: 8px;
     background: var(--card-bg);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     box-shadow: var(--shadow-lg);
-    min-width: 200px;
+    min-width: 152px;
     display: none;
-    z-index: 1000;
 }
 
 .user-dropdown.active {
@@ -1413,6 +1414,7 @@ textarea {
 .user-dropdown-item img {
     width: 18px;
     height: 18px;
+    filter: invert(58%) sepia(96%) saturate(746%) hue-rotate(320deg) brightness(102%) contrast(105%);
 }
 
 @keyframes fadeIn {

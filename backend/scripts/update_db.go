@@ -9,7 +9,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func _main_() {
+func main() {
 	if len(os.Args) < 2 {
 		fmt.Println("Uso: go run update_db.go \"TU QUERY SQL\"")
 		fmt.Println("\nEjemplos:")

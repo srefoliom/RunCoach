@@ -9,7 +9,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-func main() {
+func uuuu() {
 	// Conectar a la base de datos
 	db, err := sql.Open("sqlite", "../trainapp.db")
 	if err != nil {

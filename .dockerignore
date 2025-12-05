@@ -1,15 +1,22 @@
 # Archivos de desarrollo
 .env
 .env.local
-*.db
-*.db-shm
-*.db-wal
+
+# Base de datos de desarrollo (se usa trainapp_template.db)
+backend/trainapp.db-shm
+backend/trainapp.db-wal
 
 # Binarios compilados
 backend/*.exe
 backend/trainapp
 backend/trainapp.exe
 backend/scripts/*.exe
+trainapp.exe
+
+# Scripts de migración (no necesarios en producción)
+backend/scripts/migrate_*.go
+backend/scripts/update_db.go
+frontend/replace_alerts.ps1
 
 # IDEs
 .vscode/
@@ -26,8 +33,21 @@ Thumbs.db
 .git/
 .gitignore
 
-# Node modules (si usas npm en algún momento)
+# Documentación de desarrollo
+.doc/
+DEPLOY.md
+FLY_DEPLOY.md
+README.md
+
+# Node modules
 node_modules/
+
+# Logs
+*.log
+
+# Archivos temporales
+tmp/
+temp/
 
 # Logs
 *.log
