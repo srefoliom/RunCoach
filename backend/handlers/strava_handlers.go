@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,13 +14,16 @@ import (
 
 // StravaAuthHandler redirige al usuario a Strava para autorización
 func StravaAuthHandler(w http.ResponseWriter, r *http.Request) {
+	// Obtener userID del contexto (inyectado por AuthMiddleware)
+	userID := r.Context().Value("userID").(int)
+
 	client := services.GetStravaClient()
 	if client == nil || client.ClientID == "" {
 		http.Error(w, "Strava no está configurado", http.StatusServiceUnavailable)
 		return
 	}
 
-	authURL := client.GetAuthorizationURL()
+	authURL := client.GetAuthorizationURL(userID)
 	http.Redirect(w, r, authURL, http.StatusTemporaryRedirect)
 }
 
@@ -33,6 +37,19 @@ func StravaCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Obtener userID del parámetro state
+	stateParam := r.URL.Query().Get("state")
+	if stateParam == "" {
+		http.Error(w, "State parameter no proporcionado", http.StatusBadRequest)
+		return
+	}
+
+	var userID int
+	if _, err := fmt.Sscanf(stateParam, "%d", &userID); err != nil {
+		http.Error(w, "State parameter inválido", http.StatusBadRequest)
+		return
+	}
+
 	client := services.GetStravaClient()
 	tokenResp, err := client.ExchangeToken(code)
 	if err != nil {
@@ -40,11 +57,7 @@ func StravaCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Guardar tokens en la base de datos (asociados al usuario)
-	// TODO: Obtener userID del state parameter en el callback
-	// Por ahora, usamos userID=1 hasta implementar state parameter en OAuth
-	userID := 1
-
+	// Guardar tokens en la base de datos asociados al usuario autenticado
 	_, err = database.DB.Exec(`
 		INSERT INTO strava_tokens (user_id, access_token, refresh_token, expires_at, athlete_id)
 		VALUES (?, ?, ?, ?, ?)

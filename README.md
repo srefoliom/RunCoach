@@ -25,34 +25,6 @@
 - CSS3 con variables y animaciones
 - Marked.js para renderizado Markdown
 
-## 📦 Despliegue en Producción
-
-Ver guía completa: **[FLY_DEPLOY.md](./FLY_DEPLOY.md)**
-
-### Resumen rápido:
-
-```bash
-# 1. Instalar Fly CLI
-pwsh -Command "iwr https://fly.io/install.ps1 -useb | iex"
-
-# 2. Autenticarse
-fly auth login
-
-# 3. Crear app y volumen
-fly apps create runcoach-pro
-fly volumes create trainapp_data --region mad --size 1
-
-# 4. Configurar secretos
-fly secrets set JWT_SECRET="tu-secret-seguro"
-fly secrets set OPENAI_API_KEY="sk-..."
-fly secrets set STRAVA_CLIENT_ID="..."
-fly secrets set STRAVA_CLIENT_SECRET="..."
-fly secrets set STRAVA_REDIRECT_URI="https://runcoach-pro.fly.dev/api/strava/callback"
-
-# 5. Desplegar
-fly deploy
-```
-
 ## 🚀 Desarrollo Local
 
 ### Requisitos

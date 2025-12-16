@@ -67,13 +67,14 @@ func InitializeStrava() {
 }
 
 // GetAuthorizationURL genera la URL para que el usuario autorice la app
-func (s *StravaClient) GetAuthorizationURL() string {
+func (s *StravaClient) GetAuthorizationURL(userID int) string {
 	baseURL := "https://www.strava.com/oauth/authorize"
 	params := url.Values{}
 	params.Add("client_id", s.ClientID)
 	params.Add("redirect_uri", s.RedirectURI)
 	params.Add("response_type", "code")
 	params.Add("scope", "activity:read_all,profile:read_all")
+	params.Add("state", fmt.Sprintf("%d", userID)) // Pasar user_id en state
 
 	return fmt.Sprintf("%s?%s", baseURL, params.Encode())
 }

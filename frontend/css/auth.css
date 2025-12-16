@@ -5,17 +5,36 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: linear-gradient(135deg, #1a1f3a 0%, #2d1f3a 100%);
+    background: url('../assets/background_login.png') no-repeat center center;
+    background-size: cover;
     padding: 20px;
+    position: relative;
+}
+
+.auth-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 1;
+}
+
+.auth-page > * {
+    position: relative;
+    z-index: 2;
 }
 
 .auth-container {
     width: 100%;
-    max-width: 450px;
+    max-width: 510px;
     background: var(--card-bg);
     border-radius: 20px;
     padding: 40px;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    left: 270px;
 }
 
 .auth-header {
@@ -30,7 +49,7 @@
 }
 
 .auth-subtitle {
-    color: var(--text-secondary);
+    color: #d4d4de;
     font-size: 0.9em;
     margin-top: 10px;
 }
@@ -66,7 +85,7 @@
     width: 100%;
     padding: 12px 15px;
     background: var(--bg-color);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--gradient-end);
     border-radius: 10px;
     color: var(--text-primary);
     font-size: 1em;
@@ -156,12 +175,103 @@
 }
 
 /* Responsive */
-@media (max-width: 500px) {
+@media (max-width: 768px) {
+    .auth-page {
+        padding: 15px;
+        background-position: center center;
+        background-attachment: fixed;
+    }
+
+    .auth-page::before {
+        background: rgba(0, 0, 0, 0.5); /* Más oscuro para mejor contraste en móvil */
+    }
+
     .auth-container {
+        max-width: 100%;
         padding: 30px 20px;
+        border-radius: 15px;
+    }
+
+    .auth-header {
+        margin-bottom: 60px;
+    }
+
+    .auth-logo {
+        height: 50px;
+    }
+
+    .brand-title {
+        font-size: 1.8em;
+    }
+
+    .auth-subtitle {
+        font-size: 0.85em;
     }
     
     .auth-form h2 {
         font-size: 1.3em;
+        margin-bottom: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 15px;
+    }
+
+    .form-group input {
+        padding: 10px 12px;
+        font-size: 16px; /* Previene zoom en iOS */
+        background: transparent;
+    }
+
+    .btn-primary {
+        padding: 12px;
+        font-size: 16px;
+    }
+
+    .auth-switch {
+        font-size: 0.85em;
+        margin-top: 20px;
+    }
+}
+
+@media (max-width: 480px) {
+    .auth-page {
+        padding: 10px;
+        background: url('../assets/background_login_mb.png');
+        background-position: center;
+    }
+
+    .auth-container {
+        padding: 25px 15px;
+        border-radius: 12px;
+        width: auto;
+        background: linear-gradient(135deg, rgba(0, 212, 170, 0.15), rgba(0, 168, 232, 0.15));
+        border: solid 1px var(--gradient-end);
+        left: 0;
+        backdrop-filter: blur(2px);
+    }
+
+    .auth-logo {
+        height: 45px;
+    }
+
+    .brand-title {
+        font-size: 2.5em;
+    }
+
+    .auth-subtitle {
+        font-size: 0.8em;
+        background: linear-gradient(135deg, rgba(0, 212, 170, 0.3), rgba(0, 168, 232, 0.3));
+        /* padding: 8px 12px; */
+        border-radius: 8px;
+        backdrop-filter: blur(2px);
+    }
+
+    .auth-form h2 {
+        font-size: 1.2em;
+    }
+
+    .form-group label {
+        font-size: 0.85em;
     }
 }

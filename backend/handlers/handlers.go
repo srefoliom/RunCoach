@@ -581,11 +581,15 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 // Helpers
 
 func listWorkouts(w http.ResponseWriter, r *http.Request) {
+	// Obtener userID del contexto (inyectado por AuthMiddleware)
+	userID := r.Context().Value("userID").(int)
+
 	rows, err := database.DB.Query(`
 		SELECT id, user_id, date, type, distance, duration, avg_pace, 
 		       avg_heart_rate, avg_power, cadence, elevation_gain, calories, notes, feeling, created_at
 		FROM workouts 
-		ORDER BY date DESC`)
+		WHERE user_id = ?
+		ORDER BY date DESC`, userID)
 	if err != nil {
 		http.Error(w, "Error obteniendo workouts", http.StatusInternalServerError)
 		return
@@ -605,12 +609,18 @@ func listWorkouts(w http.ResponseWriter, r *http.Request) {
 }
 
 func createWorkout(w http.ResponseWriter, r *http.Request) {
+	// Obtener userID del contexto
+	userID := r.Context().Value("userID").(int)
+
 	var workout models.Workout
 	if err := json.NewDecoder(r.Body).Decode(&workout); err != nil {
 		log.Printf("Error decodificando workout: %v", err)
 		http.Error(w, fmt.Sprintf("Datos inválidos: %v", err), http.StatusBadRequest)
 		return
 	}
+
+	// Forzar user_id del usuario autenticado (ignorar el del body)
+	workout.UserID = userID
 
 	result, err := database.DB.Exec(`
 		INSERT INTO workouts (user_id, date, type, distance, duration, avg_pace, 
@@ -632,11 +642,14 @@ func createWorkout(w http.ResponseWriter, r *http.Request) {
 }
 
 func getWorkoutDetail(w http.ResponseWriter, r *http.Request, id int) {
+	// Obtener userID del contexto
+	userID := r.Context().Value("userID").(int)
+
 	var workout models.Workout
 	err := database.DB.QueryRow(`
 		SELECT id, user_id, date, type, distance, duration, avg_pace, 
 		       avg_heart_rate, avg_power, cadence, elevation_gain, calories, notes, feeling, created_at
-		FROM workouts WHERE id = ?`, id).Scan(
+		FROM workouts WHERE id = ? AND user_id = ?`, id, userID).Scan(
 		&workout.ID, &workout.UserID, &workout.Date, &workout.Type,
 		&workout.Distance, &workout.Duration, &workout.AvgPace,
 		&workout.AvgHeartRate, &workout.AvgPower, &workout.Cadence,

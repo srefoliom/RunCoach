@@ -11,21 +11,28 @@ import (
 // AuthMiddleware verifica que el usuario esté autenticado
 func AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// Obtener token del header Authorization
+		var token string
+
+		// Intentar obtener token del header Authorization primero
 		authHeader := r.Header.Get("Authorization")
-		if authHeader == "" {
+		if authHeader != "" {
+			// Formato esperado: "Bearer <token>"
+			parts := strings.Split(authHeader, " ")
+			if len(parts) == 2 && parts[0] == "Bearer" {
+				token = parts[1]
+			}
+		}
+
+		// Si no hay token en header, intentar obtenerlo del query parameter
+		if token == "" {
+			token = r.URL.Query().Get("token")
+		}
+
+		// Si no hay token en ningún lado, rechazar
+		if token == "" {
 			http.Error(w, "No autorizado - Token requerido", http.StatusUnauthorized)
 			return
 		}
-
-		// Formato esperado: "Bearer <token>"
-		parts := strings.Split(authHeader, " ")
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			http.Error(w, "Formato de token inválido", http.StatusUnauthorized)
-			return
-		}
-
-		token := parts[1]
 
 		// Validar token
 		authService := services.GetAuthService()

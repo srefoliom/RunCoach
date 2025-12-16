@@ -4,6 +4,7 @@ go 1.21
 
 require (
 	github.com/joho/godotenv v1.5.1
+	github.com/mattn/go-sqlite3 v1.14.16
 	github.com/openai/openai-go v0.1.0-alpha.29
 	github.com/rs/cors v1.11.1
 	golang.org/x/crypto v0.28.0

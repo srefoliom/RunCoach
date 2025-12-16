@@ -1349,7 +1349,12 @@ async function checkStravaStatus() {
 
 // Conectar con Strava
 function connectStrava() {
-    window.location.href = `${API_URL}/strava/auth`;
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        showToast('Debes iniciar sesión primero', 'error');
+        return;
+    }
+    window.location.href = `${API_URL}/strava/auth?token=${encodeURIComponent(token)}`;
 }
 
 // Sincronizar entrenos de Strava
