@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -49,6 +50,47 @@ type StravaActivity struct {
 	AverageCadence   float64   `json:"average_cadence"` // pasos por minuto
 	AverageWatts     float64   `json:"average_watts"`   // potencia
 	DeviceWatts      bool      `json:"device_watts"`    // indica si tiene medidor de potencia
+}
+
+// StravaService handles API calls with a specific access token
+type StravaService struct {
+	accessToken string
+}
+
+// NewStravaService creates a new StravaService with an access token
+func NewStravaService(accessToken string) *StravaService {
+	return &StravaService{accessToken: accessToken}
+}
+
+// GetActivityDetail fetches detailed information for a specific activity
+func (s *StravaService) GetActivityDetail(activityID int) (map[string]interface{}, error) {
+	url := fmt.Sprintf("https://www.strava.com/api/v3/activities/%d", activityID)
+
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %v", err)
+	}
+
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", s.accessToken))
+
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("error fetching activity detail: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("Strava API error: %s (status: %d)", string(body), resp.StatusCode)
+	}
+
+	var activityDetail map[string]interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&activityDetail); err != nil {
+		return nil, fmt.Errorf("error decoding response: %v", err)
+	}
+
+	return activityDetail, nil
 }
 
 var stravaClient *StravaClient
@@ -226,13 +268,36 @@ func ConvertStravaActivityToWorkout(activity *StravaActivity) map[string]interfa
 		paceMinKm = fmt.Sprintf("%d:%02d", paceMin, paceSec)
 	}
 
-	// Determinar tipo de entreno
-	workoutType := "easy"
+	// Determinar tipo de entreno basado en el nombre
+	workoutType := "easy" // Por defecto
 	if activity.Type == "Run" {
-		// Podrías usar lógica más sofisticada aquí
-		if activity.Name != "" {
-			// Si contiene "interval", "tempo", "long", etc.
-			workoutType = "easy" // Por defecto
+		nameLower := strings.ToLower(activity.Name)
+
+		// Patrones para intervalos
+		if strings.Contains(nameLower, "interval") ||
+			strings.Contains(nameLower, "series") ||
+			strings.Contains(nameLower, "repeticion") ||
+			strings.Contains(nameLower, "4x") ||
+			strings.Contains(nameLower, "5x") ||
+			strings.Contains(nameLower, "6x") ||
+			strings.Contains(nameLower, "8x") ||
+			strings.Contains(nameLower, "10x") ||
+			strings.Contains(nameLower, "cambio") {
+			workoutType = "interval"
+		} else if strings.Contains(nameLower, "tempo") ||
+			strings.Contains(nameLower, "umbral") ||
+			strings.Contains(nameLower, "ritmo") && strings.Contains(nameLower, "controlado") {
+			workoutType = "tempo"
+		} else if strings.Contains(nameLower, "larga") ||
+			strings.Contains(nameLower, "tirada larga") ||
+			strings.Contains(nameLower, "long run") ||
+			strings.Contains(nameLower, "rodaje largo") ||
+			(activity.Distance > 15000) { // Más de 15km
+			workoutType = "long_run"
+		} else if strings.Contains(nameLower, "carrera") ||
+			strings.Contains(nameLower, "competicion") ||
+			strings.Contains(nameLower, "race") {
+			workoutType = "race"
 		}
 	}
 

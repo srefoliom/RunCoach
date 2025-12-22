@@ -1,0 +1,330 @@
+/* Workout Detail Page Styles */
+
+.workout-detail-page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+    display: none; /* Hidden by default, shown by JS */
+}
+
+.detail-header {
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.btn-back {
+    float: left;
+    background: var(--card-bg);
+    color: var(--primary-color);
+    border: 1px solid var(--primary-color);
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 0.9em;
+}
+
+.btn-back:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateX(-5px);
+}
+
+.detail-header h1 {
+    color: var(--text-primary);
+    font-size: 2em;
+    margin: 0 0 10px 0;
+}
+
+.workout-date {
+    color: var(--text-secondary);
+    font-size: 1.1em;
+}
+
+/* Grid layout */
+.detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    clear: both;
+}
+
+.detail-column {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Cards */
+.detail-card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.detail-card h2 {
+    color: var(--text-primary);
+    font-size: 1.3em;
+    margin: 0 0 20px 0;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+}
+
+/* Stats grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+}
+
+.stat-item {
+    background: rgba(0, 212, 170, 0.05);
+    padding: 15px;
+    border-radius: 10px;
+    text-align: center;
+    border: 1px solid rgba(0, 212, 170, 0.1);
+}
+
+.stat-label {
+    color: var(--text-secondary);
+    font-size: 0.85em;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    color: var(--primary-color);
+    font-size: 1.5em;
+    font-weight: 600;
+    display: block;
+}
+
+.stat-unit {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+/* Mapa */
+.workout-map {
+    height: 400px;
+    width: 100%;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* Mejores esfuerzos */
+.best-efforts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.effort-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 15px;
+    background: rgba(0, 212, 170, 0.05);
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-color);
+    transition: all 0.3s ease;
+}
+
+.effort-item:hover {
+    background: rgba(0, 212, 170, 0.1);
+    transform: translateX(5px);
+}
+
+.effort-name {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.effort-time {
+    color: var(--primary-color);
+    font-weight: 600;
+    font-size: 1.1em;
+}
+
+.effort-pr {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.75em;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+/* Equipamiento */
+#gear-info {
+    padding: 15px;
+    background: rgba(0, 212, 170, 0.05);
+    border-radius: 10px;
+}
+
+.gear-name {
+    color: var(--text-primary);
+    font-size: 1.1em;
+    font-weight: 600;
+    display: block;
+    margin-bottom: 10px;
+}
+
+.gear-distance {
+    color: var(--text-secondary);
+    font-size: 0.95em;
+}
+
+/* Logros */
+#achievements-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.achievement-badge {
+    background: linear-gradient(135deg, var(--primary-color), #00a8e8);
+    color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    font-size: 0.9em;
+    font-weight: 600;
+    box-shadow: 0 4px 10px rgba(0, 212, 170, 0.3);
+}
+
+/* Tabla de splits */
+.splits-table-container {
+    overflow-x: auto;
+}
+
+.splits-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.splits-table th {
+    background: rgba(0, 212, 170, 0.1);
+    color: var(--primary-color);
+    padding: 12px;
+    text-align: left;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.splits-table td {
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.splits-table tr:hover {
+    background: rgba(0, 212, 170, 0.05);
+}
+
+.split-fastest {
+    background: rgba(0, 212, 170, 0.1) !important;
+    font-weight: 600;
+}
+
+.split-slowest {
+    background: rgba(255, 77, 77, 0.1) !important;
+}
+
+/* Segmentos */
+#segments-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.segment-item {
+    padding: 15px;
+    background: rgba(0, 212, 170, 0.05);
+    border-radius: 10px;
+    border-left: 3px solid var(--primary-color);
+}
+
+.segment-name {
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1.05em;
+    display: block;
+    margin-bottom: 8px;
+}
+
+.segment-stats {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.segment-stat {
+    color: var(--text-secondary);
+    font-size: 0.9em;
+}
+
+.segment-stat strong {
+    color: var(--primary-color);
+}
+
+.segment-kom {
+    background: linear-gradient(135deg, #FFD700, #FFA500);
+    color: #000;
+    padding: 3px 8px;
+    border-radius: 5px;
+    font-size: 0.8em;
+    font-weight: 600;
+    margin-left: 10px;
+}
+
+/* Gráficas */
+canvas {
+    max-height: 300px;
+}
+
+/* Responsive */
+@media (max-width: 1024px) {
+    .detail-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .workout-detail-page {
+        padding: 10px;
+    }
+    
+    .detail-card {
+        padding: 15px;
+    }
+    
+    .detail-card h2 {
+        font-size: 1.1em;
+    }
+    
+    .detail-header h1 {
+        font-size: 1.5em;
+    }
+    
+    .btn-back {
+        float: none;
+        display: block;
+        margin-bottom: 15px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .workout-map {
+        height: 300px;
+    }
+}

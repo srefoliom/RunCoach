@@ -81,6 +81,7 @@ func createTables() error {
 			notes TEXT,
 			feeling TEXT,
 			strava_activity_id INTEGER UNIQUE,
+			strava_data TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			FOREIGN KEY (user_id) REFERENCES users(id)
 		)`,

@@ -1,52 +1,55 @@
 package main
 
 import (
-	"database/sql"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
+	"os/exec"
+	"runtime"
 	"testing"
 	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/joho/godotenv"
 )
 
-// Test para explorar la API de Strava
+// Test para explorar la API de Strava con OAuth automático
 func TestStravaAPI(t *testing.T) {
-	fmt.Println("\n🔍 === EXPLORADOR DE API DE STRAVA ===\n")
+	fmt.Println("\n🔍 === EXPLORADOR DE API DE STRAVA ===")
 
-	// Abrir base de datos
-	db, err := sql.Open("sqlite3", "./trainapp.db")
-	if err != nil {
-		t.Fatal("❌ Error abriendo base de datos:", err)
-	}
-	defer db.Close()
+	// Cargar variables de entorno
+	godotenv.Load()
 
-	// Obtener token de Strava (del primer usuario conectado)
-	var accessToken, refreshToken string
-	var expiresAt int64
-	var userID int
+	// Obtener credenciales de Strava
+	clientID := os.Getenv("STRAVA_CLIENT_ID")
+	clientSecret := os.Getenv("STRAVA_CLIENT_SECRET")
+	redirectURI := "http://localhost:9999/callback" // Puerto temporal para el test
 
-	err = db.QueryRow(`
-		SELECT user_id, access_token, refresh_token, expires_at 
-		FROM strava_tokens 
-		ORDER BY updated_at DESC 
-		LIMIT 1
-	`).Scan(&userID, &accessToken, &refreshToken, &expiresAt)
-
-	if err != nil {
-		t.Skip("⚠️  No hay tokens de Strava guardados. Conecta Strava primero desde la app.")
-		return
+	if clientID == "" || clientSecret == "" {
+		t.Fatal("❌ STRAVA_CLIENT_ID o STRAVA_CLIENT_SECRET no configurados en .env")
 	}
 
-	fmt.Printf("✅ Token encontrado para usuario ID: %d\n", userID)
-	fmt.Printf("📅 Token expira: %s\n\n", time.Unix(expiresAt, 0).Format(time.RFC3339))
+	// Intentar obtener token existente primero
+	accessToken := os.Getenv("STRAVA_TOKEN")
 
-	// Verificar si el token está expirado
-	if time.Now().Unix() >= expiresAt {
-		fmt.Println("⚠️  Token expirado, necesita refresh")
+	// Si no hay token o es inválido, hacer OAuth flow
+	if accessToken == "" || !isTokenValid(accessToken) {
+		fmt.Println("🔐 Iniciando flujo OAuth de Strava...")
+
+		var err error
+		accessToken, err = doOAuthFlow(clientID, clientSecret, redirectURI)
+		if err != nil {
+			t.Fatalf("❌ Error en OAuth flow: %v", err)
+		}
+
+		// Guardar token en .env para futuros tests
+		fmt.Printf("\n💾 Guardando token en .env...\n")
+		updateEnvFile("STRAVA_TOKEN", accessToken)
+	} else {
+		fmt.Println("✅ Token válido encontrado en .env")
 	}
 
 	// Crear cliente HTTP
@@ -94,7 +97,7 @@ func TestStravaAPI(t *testing.T) {
 	fmt.Println("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 
 	// Obtener ID de la actividad más reciente
-	req, _ = http.NewRequest("GET", "https://www.strava.com/api/v3/athlete/activities?per_page=1", nil)
+	req, _ = http.NewRequest("GET", "https://www.strava.com/api/v3/athlete/activities?per_page=3", nil)
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 	resp, err = client.Do(req)
 	if err == nil && resp.StatusCode == 200 {
@@ -103,7 +106,7 @@ func TestStravaAPI(t *testing.T) {
 		resp.Body.Close()
 
 		if len(activities) > 0 {
-			if actID, ok := activities[0]["id"].(float64); ok {
+			if actID, ok := activities[2]["id"].(float64); ok {
 				activityID := int64(actID)
 
 				activityURL := fmt.Sprintf("https://www.strava.com/api/v3/activities/%d", activityID)
@@ -148,6 +151,211 @@ func TestStravaAPI(t *testing.T) {
 	fmt.Println("\n✅ === EXPLORACIÓN COMPLETADA ===")
 	fmt.Println("\n💡 TIP: Los archivos JSON se guardaron en ./strava_api_tests/")
 	fmt.Println("💡 Documentación: https://developers.strava.com/docs/reference/")
+}
+
+// doOAuthFlow realiza el flujo OAuth de Strava automáticamente
+func doOAuthFlow(clientID, clientSecret, redirectURI string) (string, error) {
+	// Canal para recibir el código de autorización
+	codeChan := make(chan string, 1)
+	errChan := make(chan error, 1)
+
+	// Crear servidor HTTP temporal para recibir el callback
+	server := &http.Server{Addr: ":9999"}
+
+	http.HandleFunc("/callback", func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		if code == "" {
+			errChan <- fmt.Errorf("no se recibió código de autorización")
+			return
+		}
+
+		// Mostrar página de éxito
+		w.Header().Set("Content-Type", "text/html; charset=utf-8")
+		fmt.Fprintf(w, `
+			<html>
+			<head><title>Autorización Exitosa</title></head>
+			<body style="font-family: Arial; text-align: center; padding: 50px;">
+				<h1>✅ Autorización Exitosa</h1>
+				<p>Puedes cerrar esta ventana y volver al test.</p>
+			</body>
+			</html>
+		`)
+
+		codeChan <- code
+	})
+
+	// Iniciar servidor en goroutine
+	go func() {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			errChan <- err
+		}
+	}()
+
+	// Dar tiempo al servidor para iniciar
+	time.Sleep(500 * time.Millisecond)
+
+	// Construir URL de autorización
+	authURL := fmt.Sprintf(
+		"https://www.strava.com/oauth/authorize?client_id=%s&redirect_uri=%s&response_type=code&scope=activity:read_all,profile:read_all",
+		clientID,
+		url.QueryEscape(redirectURI),
+	)
+
+	fmt.Println("🌐 Abriendo navegador para autorización...")
+	fmt.Printf("📋 Si no se abre automáticamente, ve a:\n%s\n\n", authURL)
+
+	// Abrir navegador
+	openBrowser(authURL)
+
+	fmt.Println("⏳ Esperando autorización (tienes 2 minutos)...")
+
+	// Esperar código o timeout
+	var code string
+	select {
+	case code = <-codeChan:
+		fmt.Println("✅ Código de autorización recibido!")
+	case err := <-errChan:
+		server.Shutdown(context.Background())
+		return "", err
+	case <-time.After(2 * time.Minute):
+		server.Shutdown(context.Background())
+		return "", fmt.Errorf("timeout esperando autorización")
+	}
+
+	// Cerrar servidor
+	server.Shutdown(context.Background())
+
+	// Intercambiar código por token
+	fmt.Println("🔄 Intercambiando código por access token...")
+
+	tokenURL := "https://www.strava.com/oauth/token"
+	data := url.Values{}
+	data.Set("client_id", clientID)
+	data.Set("client_secret", clientSecret)
+	data.Set("code", code)
+	data.Set("grant_type", "authorization_code")
+
+	resp, err := http.PostForm(tokenURL, data)
+	if err != nil {
+		return "", fmt.Errorf("error intercambiando código: %v", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("error de Strava: %s", string(body))
+	}
+
+	var tokenResp struct {
+		AccessToken  string `json:"access_token"`
+		RefreshToken string `json:"refresh_token"`
+		ExpiresAt    int64  `json:"expires_at"`
+	}
+
+	if err := json.NewDecoder(resp.Body).Decode(&tokenResp); err != nil {
+		return "", fmt.Errorf("error decodificando respuesta: %v", err)
+	}
+
+	fmt.Printf("✅ Access Token obtenido!\n")
+	fmt.Printf("📅 Expira: %s\n", time.Unix(tokenResp.ExpiresAt, 0).Format(time.RFC3339))
+
+	return tokenResp.AccessToken, nil
+}
+
+// isTokenValid verifica si un token es válido haciendo una petición simple
+func isTokenValid(token string) bool {
+	client := &http.Client{Timeout: 5 * time.Second}
+	req, _ := http.NewRequest("GET", "https://www.strava.com/api/v3/activities", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer resp.Body.Close()
+
+	return resp.StatusCode == 200
+}
+
+// openBrowser abre una URL en el navegador predeterminado
+func openBrowser(url string) {
+	var err error
+	switch runtime.GOOS {
+	case "linux":
+		err = exec.Command("xdg-open", url).Start()
+	case "windows":
+		err = exec.Command("rundll32", "url.dll,FileProtocolHandler", url).Start()
+	case "darwin":
+		err = exec.Command("open", url).Start()
+	default:
+		err = fmt.Errorf("plataforma no soportada")
+	}
+
+	if err != nil {
+		fmt.Printf("⚠️  No se pudo abrir el navegador automáticamente: %v\n", err)
+	}
+}
+
+// updateEnvFile actualiza o agrega una variable en el archivo .env
+func updateEnvFile(key, value string) {
+	envPath := ".env"
+
+	// Leer archivo existente
+	content, err := os.ReadFile(envPath)
+	if err != nil {
+		fmt.Printf("⚠️  No se pudo leer .env: %v\n", err)
+		return
+	}
+
+	lines := string(content)
+
+	// Buscar y reemplazar la línea con la clave
+	keyPrefix := key + "="
+	found := false
+	newContent := ""
+
+	for _, line := range splitLines(lines) {
+		if len(line) > len(keyPrefix) && line[:len(keyPrefix)] == keyPrefix {
+			newContent += keyPrefix + value + "\n"
+			found = true
+		} else {
+			newContent += line + "\n"
+		}
+	}
+
+	// Si no se encontró, agregar al final
+	if !found {
+		newContent += "\n" + keyPrefix + value + "\n"
+	}
+
+	// Escribir archivo
+	if err := os.WriteFile(envPath, []byte(newContent), 0644); err != nil {
+		fmt.Printf("⚠️  No se pudo escribir .env: %v\n", err)
+		return
+	}
+
+	fmt.Println("✅ Token guardado en .env")
+}
+
+// splitLines divide un string en líneas
+func splitLines(s string) []string {
+	var lines []string
+	current := ""
+
+	for _, c := range s {
+		if c == '\n' {
+			lines = append(lines, current)
+			current = ""
+		} else if c != '\r' {
+			current += string(c)
+		}
+	}
+
+	if current != "" {
+		lines = append(lines, current)
+	}
+
+	return lines
 }
 
 // testEndpoint hace una petición a un endpoint y muestra el resultado formateado

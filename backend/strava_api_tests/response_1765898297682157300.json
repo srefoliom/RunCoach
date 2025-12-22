@@ -1,0 +1,33 @@
+[
+  {
+    "activity": {
+      "id": 16738378694,
+      "resource_state": 1,
+      "visibility": "everyone"
+    },
+    "athlete": {
+      "id": 196198096,
+      "resource_state": 1
+    },
+    "average_heartrate": 150.8,
+    "average_speed": 3.28,
+    "average_watts": 252.1,
+    "device_watts": true,
+    "distance": 16009.5,
+    "elapsed_time": 4874,
+    "end_index": 4875,
+    "id": 59693731504,
+    "lap_index": 1,
+    "max_heartrate": 168,
+    "max_speed": 4.94,
+    "moving_time": 4874,
+    "name": "Lap 1",
+    "pace_zone": 0,
+    "resource_state": 2,
+    "split": 1,
+    "start_date": "2025-12-14T08:53:51Z",
+    "start_date_local": "2025-12-14T09:53:51Z",
+    "start_index": 0,
+    "total_elevation_gain": 198.4
+  }
+]

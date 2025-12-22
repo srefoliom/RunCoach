@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -141,23 +142,31 @@ func StravaSyncHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Obtener la fecha del último workout sincronizado
-	var lastSyncTimestamp int64
+	// Obtener la fecha del último workout sincronizado (timestamp Unix)
+	var lastActivityDateStr string
 	err = database.DB.QueryRow(`
-		SELECT COALESCE(MAX(strava_activity_id), 0)
+		SELECT MAX(date)
 		FROM workouts
 		WHERE user_id = ? AND strava_activity_id IS NOT NULL
-	`, userID).Scan(&lastSyncTimestamp)
-
-	if err != nil {
-		lastSyncTimestamp = 0
-	}
+	`, userID).Scan(&lastActivityDateStr)
 
 	// Obtener actividades de Strava (últimas 180 días si no hay sincronización previa)
-	after := lastSyncTimestamp
-	if after == 0 {
+	var after int64
+	if err == nil && lastActivityDateStr != "" {
+		// Parse la fecha y obtener actividades desde 1 día antes
+		lastDate, parseErr := time.Parse("2006-01-02 15:04:05", lastActivityDateStr)
+		if parseErr == nil {
+			after = lastDate.AddDate(0, 0, -1).Unix()
+		} else {
+			// Si falla el parsing, usar 180 días
+			after = time.Now().AddDate(0, 0, -180).Unix()
+		}
+	} else {
+		// Primera sincronización: últimos 180 días
 		after = time.Now().AddDate(0, 0, -180).Unix()
 	}
+
+	log.Printf("📅 Sincronizando actividades desde: %s", time.Unix(after, 0).Format("2006-01-02"))
 
 	activities, err := client.GetActivities(accessToken, after, 50)
 	if err != nil {
@@ -167,49 +176,80 @@ func StravaSyncHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Filtrar solo actividades de running
 	imported := 0
+	skipped := 0
 	for _, activity := range activities {
 		if activity.Type != "Run" {
 			continue
 		}
 
-		// Verificar si ya existe
-		var exists int
+		// Verificar si ya existe (verificación robusta con user_id y strava_activity_id)
+		var existingID int
 		err = database.DB.QueryRow(`
-			SELECT COUNT(*) FROM workouts WHERE strava_activity_id = ?
-		`, activity.ID).Scan(&exists)
+			SELECT id FROM workouts 
+			WHERE user_id = ? AND strava_activity_id = ?
+		`, userID, activity.ID).Scan(&existingID)
 
-		if exists > 0 {
+		if err == nil {
+			// Ya existe, verificar si tiene datos de Strava cacheados
+			var hasStravaData sql.NullString
+			database.DB.QueryRow(`
+				SELECT strava_data FROM workouts WHERE id = ?
+			`, existingID).Scan(&hasStravaData)
+
+			// Si no tiene datos cacheados, actualizar
+			if !hasStravaData.Valid || hasStravaData.String == "" {
+				stravaService := services.NewStravaService(accessToken)
+				activityDetail, err := stravaService.GetActivityDetail(int(activity.ID))
+				if err == nil {
+					stravaJSON, _ := json.Marshal(activityDetail)
+					database.DB.Exec(`
+						UPDATE workouts SET strava_data = ? WHERE id = ?
+					`, string(stravaJSON), existingID)
+				}
+			}
+
+			skipped++
 			continue
 		}
 
-		// Obtener detalles completos de la actividad (incluye HR y cadencia)
-		detailedActivity, err := client.GetActivity(accessToken, activity.ID)
+		// Obtener detalles completos de la actividad desde API
+		stravaService := services.NewStravaService(accessToken)
+		activityDetail, err := stravaService.GetActivityDetail(int(activity.ID))
 		if err != nil {
 			log.Printf("⚠️  Error obteniendo detalles de actividad %d: %v", activity.ID, err)
-			// Continuar con los datos básicos si falla
-			detailedActivity = &activity
+			// Usar datos básicos si falla la API
+			activityDetail = nil
 		}
 
-		// Convertir a formato de workout
-		workoutData := services.ConvertStravaActivityToWorkout(detailedActivity)
+		// Convertir actividad básica a formato workout
+		workoutData := services.ConvertStravaActivityToWorkout(&activity)
 
-		// Insertar en la base de datos
+		// Serializar datos completos de Strava si los tenemos
+		var stravaDataJSON string
+		if activityDetail != nil {
+			stravaBytes, _ := json.Marshal(activityDetail)
+			stravaDataJSON = string(stravaBytes)
+		}
+
+		// Insertar en la base de datos con datos completos
 		_, err = database.DB.Exec(`
 			INSERT INTO workouts (user_id, date, type, distance, duration, avg_pace,
 			                      avg_heart_rate, avg_power, cadence, elevation_gain, calories,
-			                      notes, feeling, strava_activity_id)
-			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+			                      notes, feeling, strava_activity_id, strava_data)
+			VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		`, userID, workoutData["date"], workoutData["type"], workoutData["distance"],
 			workoutData["duration"], workoutData["avg_pace"], workoutData["avg_heart_rate"],
 			workoutData["avg_power"], workoutData["cadence"], workoutData["elevation_gain"],
-			workoutData["calories"], workoutData["notes"], workoutData["feeling"], activity.ID)
+			workoutData["calories"], workoutData["notes"], workoutData["feeling"], activity.ID,
+			stravaDataJSON)
 
 		if err != nil {
-			log.Printf("Error importando actividad %d: %v", activity.ID, err)
+			log.Printf("❌ Error importando actividad %d: %v", activity.ID, err)
 			continue
 		}
 
 		imported++
+		log.Printf("✅ Importada actividad %d: %s", activity.ID, workoutData["notes"])
 	}
 
 	// Actualizar última sincronización
@@ -222,8 +262,9 @@ func StravaSyncHandler(w http.ResponseWriter, r *http.Request) {
 	response := map[string]interface{}{
 		"success":  true,
 		"imported": imported,
+		"skipped":  skipped,
 		"total":    len(activities),
-		"message":  "Sincronización completada",
+		"message":  fmt.Sprintf("Sincronización completada: %d nuevas, %d ya existentes", imported, skipped),
 	}
 
 	json.NewEncoder(w).Encode(response)

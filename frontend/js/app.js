@@ -659,7 +659,7 @@ function createWorkoutCard(workout, showAnalyzeBtn = false) {
     });
     
     return `
-        <div class="workout-item">
+        <div class="workout-item" style="cursor: pointer;" onclick="window.location.href='workout-detail.html?id=${workout.id}'">
             <div class="workout-header">
                 <span class="workout-date">${formattedDate}</span>
                 <span class="workout-type">${translateWorkoutType(workout.type)}</span>
@@ -702,7 +702,7 @@ function createWorkoutCard(workout, showAnalyzeBtn = false) {
                 </div>
             </div>
             ${workout.notes ? `<p style="margin-top: 10px;"><em>${workout.notes}</em></p>` : ''}
-            ${showAnalyzeBtn ? `<button class="btn btn-analyze" onclick="analyzeWorkout(${workout.id})">Analizar con IA</button>` : ''}
+            ${showAnalyzeBtn ? `<button class="btn btn-analyze" onclick="event.stopPropagation(); analyzeWorkout(${workout.id})">Analizar con IA</button>` : ''}
             <div id="analysis-${workout.id}"></div>
         </div>
     `;

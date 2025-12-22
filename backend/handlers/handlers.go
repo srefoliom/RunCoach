@@ -35,6 +35,12 @@ func WorkoutDetailHandler(w http.ResponseWriter, r *http.Request) {
 
 	// Extraer ID del path
 	path := strings.TrimPrefix(r.URL.Path, "/api/workouts/")
+
+	// Check if requesting detail with /detail suffix
+	if strings.HasSuffix(path, "/detail") {
+		path = strings.TrimSuffix(path, "/detail")
+	}
+
 	id, err := strconv.Atoi(path)
 	if err != nil {
 		http.Error(w, "ID inválido", http.StatusBadRequest)
@@ -42,7 +48,12 @@ func WorkoutDetailHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.Method == "GET" {
-		getWorkoutDetail(w, r, id)
+		// Check if requesting detailed view with Strava data
+		if strings.HasSuffix(r.URL.Path, "/detail") {
+			getWorkoutDetailWithStrava(w, r, id)
+		} else {
+			getWorkoutDetail(w, r, id)
+		}
 	} else {
 		http.Error(w, "Método no permitido", http.StatusMethodNotAllowed)
 	}
@@ -678,6 +689,122 @@ func getWorkoutDetail(w http.ResponseWriter, r *http.Request, id int) {
 
 	if err == nil {
 		response["analysis"] = analysis
+	}
+
+	json.NewEncoder(w).Encode(response)
+}
+
+// getWorkoutDetailWithStrava obtiene el detalle del workout enriquecido con datos de Strava
+func getWorkoutDetailWithStrava(w http.ResponseWriter, r *http.Request, id int) {
+	// Obtener userID del contexto
+	userID := r.Context().Value("userID").(int)
+
+	// Get workout from database
+	var workout models.Workout
+	var stravaActivityID sql.NullInt64
+	var stravaDataJSON sql.NullString
+	err := database.DB.QueryRow(`
+		SELECT id, user_id, date, type, distance, duration, avg_pace, 
+		       avg_heart_rate, avg_power, cadence, elevation_gain, calories, notes, feeling, 
+		       strava_activity_id, strava_data, created_at
+		FROM workouts WHERE id = ? AND user_id = ?`, id, userID).Scan(
+		&workout.ID, &workout.UserID, &workout.Date, &workout.Type,
+		&workout.Distance, &workout.Duration, &workout.AvgPace,
+		&workout.AvgHeartRate, &workout.AvgPower, &workout.Cadence,
+		&workout.ElevationGain, &workout.Calories, &workout.Notes,
+		&workout.Feeling, &stravaActivityID, &stravaDataJSON, &workout.CreatedAt)
+
+	if err == sql.ErrNoRows {
+		http.Error(w, "Workout no encontrado", http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		log.Printf("Error obteniendo workout: %v", err)
+		http.Error(w, "Error obteniendo workout", http.StatusInternalServerError)
+		return
+	}
+
+	// Try to get Strava data from database first
+	var stravaData map[string]interface{}
+	if stravaDataJSON.Valid && stravaDataJSON.String != "" {
+		// Parse cached Strava data
+		if err := json.Unmarshal([]byte(stravaDataJSON.String), &stravaData); err != nil {
+			log.Printf("Error parsing cached Strava data: %v", err)
+			stravaData = nil
+		}
+	}
+
+	// If no cached data and workout has Strava activity, fetch from Strava API
+	if stravaData == nil && stravaActivityID.Valid && stravaActivityID.Int64 > 0 {
+		// Get user's Strava access token
+		var accessToken string
+		err = database.DB.QueryRow(`
+			SELECT access_token FROM strava_tokens WHERE user_id = ?`, userID).Scan(&accessToken)
+
+		if err == nil && accessToken != "" {
+			// Fetch activity detail from Strava
+			stravaService := services.NewStravaService(accessToken)
+			activityDetail, err := stravaService.GetActivityDetail(int(stravaActivityID.Int64))
+			if err == nil {
+				stravaData = activityDetail
+
+				// Cache the Strava data
+				stravaJSON, _ := json.Marshal(stravaData)
+				_, _ = database.DB.Exec(`
+					UPDATE workouts SET strava_data = ? WHERE id = ?`,
+					string(stravaJSON), id)
+			} else {
+				log.Printf("Error fetching Strava activity detail: %v", err)
+			}
+		}
+	}
+
+	// Build response
+	response := map[string]interface{}{
+		"id":                   workout.ID,
+		"user_id":              workout.UserID,
+		"name":                 fmt.Sprintf("Entreno del %s", workout.Date.Format("02/01/2006")),
+		"start_date":           workout.Date,
+		"type":                 workout.Type,
+		"distance":             workout.Distance * 1000, // Convert to meters for consistency with Strava
+		"moving_time":          workout.Duration * 60,   // Convert to seconds
+		"elapsed_time":         workout.Duration * 60,
+		"average_speed":        0.0,
+		"average_heartrate":    float64(workout.AvgHeartRate),
+		"max_heartrate":        float64(workout.AvgHeartRate),
+		"average_watts":        float64(workout.AvgPower),
+		"max_watts":            float64(workout.AvgPower),
+		"average_cadence":      float64(workout.Cadence),
+		"total_elevation_gain": float64(workout.ElevationGain),
+		"calories":             float64(workout.Calories),
+		"perceived_exertion":   workout.Feeling,
+		"notes":                workout.Notes,
+	}
+
+	// Calculate average speed from distance and time
+	if workout.Duration > 0 {
+		response["average_speed"] = (workout.Distance * 1000) / float64(workout.Duration*60)
+	}
+
+	// If we have Strava data, merge it (Strava data takes precedence for richer fields)
+	if stravaData != nil {
+		// Merge specific fields from Strava
+		mergeStravaFields := []string{
+			"name", "start_date", "distance", "moving_time", "elapsed_time",
+			"average_speed", "max_speed", "average_heartrate", "max_heartrate",
+			"average_watts", "max_watts", "average_cadence", "total_elevation_gain",
+			"elev_high", "elev_low", "calories", "suffer_score", "perceived_exertion",
+			"achievement_count", "pr_count", "kudos_count", "comment_count",
+			"map", "best_efforts", "splits_metric", "splits_standard",
+			"laps", "segment_efforts", "gear", "device_name", "has_heartrate",
+			"available_zones", "athlete",
+		}
+
+		for _, field := range mergeStravaFields {
+			if value, exists := stravaData[field]; exists && value != nil {
+				response[field] = value
+			}
+		}
 	}
 
 	json.NewEncoder(w).Encode(response)

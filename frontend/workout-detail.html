@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalle del Entreno - RunCoach Pro</title>
+    <link rel="icon" type="image/svg+xml" href="assets/logo_zapatilla.svg">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/workout-detail.css">
+    
+    <!-- Leaflet para mapas -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Chart.js para gráficas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+    <div id="loading" class="loading">
+        <div class="spinner"></div>
+        <p>Cargando entreno...</p>
+    </div>
+
+    <div class="workout-detail-page">
+        <!-- Header con botón volver -->
+        <div class="detail-header">
+            <button class="btn-back" onclick="window.history.back()">
+                ← Volver al historial
+            </button>
+            <h1 id="workout-title">Cargando...</h1>
+            <div id="workout-date" class="workout-date"></div>
+        </div>
+
+        <!-- Grid principal -->
+        <div class="detail-grid">
+            <!-- Columna izquierda: Stats y métricas -->
+            <div class="detail-column">
+                <!-- Stats principales -->
+                <div class="detail-card">
+                    <h2>📊 Resumen del Entreno</h2>
+                    <div class="stats-grid" id="main-stats">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Mejores esfuerzos -->
+                <div class="detail-card" id="best-efforts-card" style="display: none;">
+                    <h2>🏆 Mejores Esfuerzos</h2>
+                    <div class="best-efforts-list" id="best-efforts">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Equipamiento -->
+                <div class="detail-card" id="gear-card" style="display: none;">
+                    <h2>👟 Equipamiento</h2>
+                    <div id="gear-info">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+
+                <!-- Logros -->
+                <div class="detail-card" id="achievements-card" style="display: none;">
+                    <h2>🎖️ Logros</h2>
+                    <div id="achievements-info">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna derecha: Mapa y gráficas -->
+            <div class="detail-column">
+                <!-- Mapa del recorrido -->
+                <div class="detail-card" id="map-card" style="display: none;">
+                    <h2>🗺️ Recorrido</h2>
+                    <div id="map" class="workout-map"></div>
+                </div>
+
+                <!-- Gráfica de elevación -->
+                <div class="detail-card" id="elevation-card" style="display: none;">
+                    <h2>⛰️ Perfil de Elevación</h2>
+                    <canvas id="elevation-chart"></canvas>
+                </div>
+
+                <!-- Gráfica de ritmo por km -->
+                <div class="detail-card" id="pace-card" style="display: none;">
+                    <h2>⚡ Ritmo por Kilómetro</h2>
+                    <canvas id="pace-chart"></canvas>
+                </div>
+
+                <!-- Gráfica de FC por km -->
+                <div class="detail-card" id="hr-card" style="display: none;">
+                    <h2>❤️ Frecuencia Cardíaca</h2>
+                    <canvas id="hr-chart"></canvas>
+                </div>
+
+                <!-- Tabla de splits -->
+                <div class="detail-card" id="splits-card" style="display: none;">
+                    <h2>📏 Splits por Kilómetro</h2>
+                    <div class="splits-table-container">
+                        <table class="splits-table" id="splits-table">
+                            <thead>
+                                <tr>
+                                    <th>Km</th>
+                                    <th>Tiempo</th>
+                                    <th>Ritmo</th>
+                                    <th>FC</th>
+                                    <th>Elev.</th>
+                                </tr>
+                            </thead>
+                            <tbody id="splits-body">
+                                <!-- Se llena dinámicamente -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Segmentos de Strava -->
+                <div class="detail-card" id="segments-card" style="display: none;">
+                    <h2>🎯 Segmentos</h2>
+                    <div id="segments-list">
+                        <!-- Se llena dinámicamente -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast container -->
+    <div id="toast-container" class="toast-container"></div>
+
+    <!-- External Libraries -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/@mapbox/polyline@1.1.1/src/polyline.js"></script>
+    <script src="js/workout-detail.js"></script>
+</body>
+</html>
